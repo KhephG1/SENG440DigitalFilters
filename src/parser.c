@@ -6,10 +6,10 @@
 #include <string.h>
 
 #define MAXLINE (50)
-#define INPUT_SF (6)     // input scale factor is 2^7
-#define FIR_SF (19)      // FIR scale factor is 2^22
+#define INPUT_SF (6)     // input scale factor is 2^6
+#define FIR_SF (19)      // FIR scale factor is 2^19
 #define IIR_NUM_SF (28)  // IIR Numerator scale factor is 2^28
-#define IIR_DEN_SF (12)  // IIR Denominator coefficients
+#define IIR_DEN_SF (12)  // IIR Denominator scale factor is 2^12
 
 // todo:
 /*
