@@ -2,7 +2,7 @@ from scipy import signal
 import matplotlib.pyplot as plt
 import numpy as np
 
-taps = 101
+taps = 51
 cutoff = 500
 fs = 25.6e3
 
@@ -12,6 +12,21 @@ filt = signal.firwin(
 
 num = filt
 den = 1
+
+
+def write_coeffs(filename, num, den):
+    num = np.atleast_1d(np.asarray(num, dtype=float))
+    den = np.atleast_1d(np.asarray(den, dtype=float))
+    with open(filename, "w") as f:
+        f.write("num\n")
+        for c in num:
+            f.write(f"{c:.8e}\n")
+        f.write("den\n")
+        for c in den:
+            f.write(f"{c:.8e}\n")
+
+
+write_coeffs("FIR_filter_coeffs.txt", num, den)
 
 w, h = signal.freqz(num, den, worN=2000, fs=fs)
 magnitude_db = 20 * np.log10(np.abs(h))
@@ -31,6 +46,5 @@ ax2.set_xlabel("Frequency (Hz)")
 ax2.set_ylabel("Phase (Degrees)")
 ax2.grid(True, which="both", color="gray", alpha=0.5)
 print(filt)
-# Final formatting adjustments
-# plt.tight_layout()
-# plt.show()
+plt.tight_layout()
+plt.show()

@@ -1,6 +1,12 @@
 {
-"C_Cpp.codeAnalysis.clangTidy.checks.enabled": ["bugprone-*", "cert-*", "modernize-*", "performance-*", "readability-*"],
-
-"C_Cpp.codeAnalysis.clangTidy.enabled": true
-
+    "C_Cpp.intelliSenseEngine": "default",
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "ms-vscode.cpptools",
+    "C_Cpp.formatting": "clangFormat",
+    "C_Cpp.clang_format_path": "/usr/bin/clang-format",
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "none",
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    }
 }
