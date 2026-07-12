@@ -1,5 +1,5 @@
 #include "tests.h"
-#include "parser.h"
+#include "input_data_loader.h"
 #include <stdio.h>
 
 void test_parser(char *output, int16_t *input_data, filter_t *filter)

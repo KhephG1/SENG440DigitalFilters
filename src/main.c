@@ -1,4 +1,5 @@
-#include "parser.h"
+#include "coefficient_loader.h"
+#include "input_data_loader.h"
 #include "tests.h"
 #include <stdio.h>
 int16_t input_samples[MAX_SAMPLES] = {};
