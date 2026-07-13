@@ -15,6 +15,6 @@ void test_parser(char *output, int16_t *input_data, filter_t *filter)
     }
     for (int i = 0; i < coeffs; i++)
     {
-        fprintf(file, "coeffs[%d]: %d\n", i, filter->numerator[i]);
+        fprintf(file, "coeffs[%d]: %d\n", i, filter->x[i]);
     }
 }
