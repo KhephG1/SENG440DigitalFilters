@@ -4,6 +4,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-int load_coeffs(int *samples, size_t max_samples);
+#define MAX_COEFFS (100)
+typedef struct filter_t {
+    int16_t x[MAX_COEFFS];
+    int16_t y[MAX_COEFFS];
+    uint16_t x_coeffs;
+    uint16_t y_coeffs;
 
+} filter_t;
+typedef enum { FIR = 0, IIR } filter_type;
+int load_coefficients(const char *filename, filter_type type, filter_t *filter);
 #endif

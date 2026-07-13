@@ -1,0 +1,30 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+# MISRA C Alignment & Spacing
+IndentWidth: 4
+ColumnLimit: 80
+UseTab: Never
+PointerAlignment: Right
+
+# MISRA C Bracing Rules (Enforces visible blocks)
+AllowShortBlocksOnASingleLine: false
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+
+# Clean layouts
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+SpacesBeforeTrailingComments: 2
+# Bracing and Control Statements (MISRA C Rule 15.6 requires braces for all blocks)
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterControlStatement: true
+  AfterFunction: true
+  BeforeElse: true
+  BeforeWhile: true
+  AfterStruct: false
+  AfterEnum: false
+...
