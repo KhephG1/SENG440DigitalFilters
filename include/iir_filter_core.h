@@ -4,7 +4,7 @@
 #include "coefficient_loader.h"
 #include <stddef.h>
 #include <stdint.h>
-void iir_filter(const int16_t *input, int *output, size_t input_length,
+void iir_filter(const int16_t *input, int16_t *output, size_t input_length,
                 filter_t *filter);
 
 #endif

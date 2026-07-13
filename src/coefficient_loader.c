@@ -48,7 +48,9 @@ int load_coefficients(const char *filename, filter_type type, filter_t *filter)
             i++;
         }
         filter->x_coeffs = i;
-        while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS)
+        char *result =
+            fgets(label, MAXLINE, input);  // get rid of the "den" line
+        while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS && result)
         {
             // apply scale factor to coeffs (C = round (c * SF))
             filter->y[j] = (int16_t)ldexpf(coef, IIR_DEN_SF);
