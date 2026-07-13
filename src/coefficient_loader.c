@@ -50,6 +50,7 @@ int load_coefficients(const char *filename, filter_type type, filter_t *filter)
         filter->x_coeffs = i;
         while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS)
         {
+            // apply scale factor to coeffs (C = round (c * SF))
             filter->y[j] = (int16_t)ldexpf(coef, IIR_DEN_SF);
             j++;
         }

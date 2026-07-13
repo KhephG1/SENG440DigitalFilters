@@ -24,7 +24,7 @@ int load_accelerometer_data(int16_t *input_data_buffer, uint32_t buffer_size)
         {
             return -1;  // indicate buffer overflow error status
         }
-        // X = round(x * SF) where SF = 2^7
+        // X = round(x * SF) where SF = 2^6
         input_data_buffer[i] = (int16_t)ldexpf(sample, INPUT_SF);
         i++;
     }
