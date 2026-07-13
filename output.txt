@@ -1,4 +1,4 @@
-data samples: 258561 coeffs: 52input_samples[0]: 14
+data samples: 258561 coeffs: 51input_samples[0]: 14
 input_samples[1]: 16
 input_samples[2]: 9
 input_samples[3]: 19
@@ -258610,4 +258610,3 @@ coeffs[47]: 61
 coeffs[48]: 18
 coeffs[49]: 2
 coeffs[50]: 0
-coeffs[51]: 0

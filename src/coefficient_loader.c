@@ -48,7 +48,7 @@ int load_coefficients(const char *filename, filter_type type, filter_t *filter)
             i++;
         }
         filter->x_coeffs = i;
-        while (fscanf(input, "%f", &coef) && j < MAX_COEFFS)
+        while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS)
         {
             filter->y[j] = (int16_t)ldexpf(coef, IIR_DEN_SF);
             j++;
