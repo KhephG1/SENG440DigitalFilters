@@ -1,35 +1,19 @@
-"""Convert fixed-point filter output back to float and plot it.
-
-The C filter writes one signed integer per line (the Q-format fixed-point
-sample). This script reads that file, rescales by 2^-SF to recover the float
-value, and plots amplitude vs. time. Optionally overlays the raw input.
-
-Usage:
-    python tools/plot_filter_output.py test_output/filte_output.txt
-    python tools/plot_filter_output.py test_output/filte_output.txt --sf 12 --fs 25600
-    python tools/plot_filter_output.py test_output/filte_output.txt --input tools/data.csv
-"""
-
 import argparse
-
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Scale factors used by the C code (see coefficient_loader.c / input_data_loader.c)
-OUTPUT_SF = 0  # IIR output is Q12
-INPUT_SF =  0   # accelerometer input is Q6 (data.csv is already float, so unused for it)
-FS = 25600      # sampling rate in Hz (matches IIR_filter.py)
-
+# Scale factors used by the C code
+OUTPUT_SF = 17  # IIR output is Q6 (2^6 scale factor)
+INPUT_SF =  0  # accelerometer input is Q0
+FS = 25600     # sampling rate in Hz
 
 INT16_MIN = -32768
 INT16_MAX = 32767
-
 
 def load_fixed_point(path, scale_factor):
     """Read one integer per line; return (float samples, raw int samples)."""
     raw = np.loadtxt(path)
     return raw / float(1 << scale_factor), raw
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
@@ -45,28 +29,63 @@ def main():
                         help="save the plot to a file instead of showing it")
     args = parser.parse_args()
 
+    # 1. Load data and convert to milliseconds
     y, y_raw = load_fixed_point(args.output_file, args.sf)
-    t = np.arange(len(y)) / args.fs
+    t_ms = (np.arange(len(y)) / args.fs) * 1000.0
 
-    plt.figure(figsize=(10, 5))
+    # 2. Slice the arrays to strictly keep the first 100 ms of data
+    time_mask = t_ms <= 100.0
+    t_ms_window = t_ms[time_mask]
+    y_window = y[time_mask]
+    y_raw_window = y_raw[time_mask]
 
+    # --- Setup a 2-Row Plot Configuration ---
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 7), sharex=False)
+
+    # ==========================================
+    # SUBPLOT 1: TIME DOMAIN WAVEFORM (0 to 100 ms)
+    # ==========================================
     if args.input:
         x = np.loadtxt(args.input)
-        n = min(len(x), len(y))  # loader may drop samples that overflow the buffer
-        plt.plot(t[:n], x[:n], color="0.7", linewidth=0.8, label="input")
+        x_window = x[:len(y)][time_mask] # Slice matching input window
+        ax1.plot(t_ms_window, x_window, color="0.7", linewidth=0.8, label="input")
 
-    plt.plot(t, y, "b", linewidth=0.8, label="filter output")
-
-    saturated = int(np.sum((y_raw <= INT16_MIN) | (y_raw >= INT16_MAX)))
-    title = f"Filter output ({len(y)} samples, Q{args.sf}, fs={args.fs:g} Hz)"
+    ax1.plot(t_ms_window, y_window, "b", linewidth=0.8, label="filter output")
+    
+    saturated = int(np.sum((y_raw_window <= INT16_MIN) | (y_raw_window >= INT16_MAX)))
+    title = f"Filter Output Time Domain (First 100 ms, {len(y_window)} samples)"
     if saturated:
-        title += f"  —  WARNING: {saturated} samples at int16 rail (clipping)"
+        title += f"  —  WARNING: {saturated} windowed samples at int16 rail"
 
-    plt.title(title)
-    plt.xlabel("Time (s)")
-    plt.ylabel("Amplitude")
-    plt.grid(True)
-    plt.legend()
+    ax1.set_title(title)
+    ax1.set_xlabel("Time (ms)")
+    ax1.set_ylabel("Amplitude")
+    ax1.set_xlim(0, 100.0) # Hard-lock viewing frame to 0-100 ms
+    ax1.grid(True)
+    ax1.legend()
+
+    # ==========================================
+    # SUBPLOT 2: FOURIER TRANSFORM (OF THE 100 ms WINDOW)
+    # ==========================================
+    n_samples = len(y_window)
+    
+    # Calculate Fast Fourier Transform ONLY for the visible 100ms window
+    fft_output = np.fft.rfft(y_window)
+    frequencies = np.fft.rfftfreq(n_samples, d=1.0/args.fs)
+    
+    magnitudes = (np.abs(fft_output) / n_samples) * 2.0
+    if len(magnitudes) > 0:
+        magnitudes[0] /= 2.0  
+
+    # Plot the frequency magnitude spectrum
+    ax2.plot(frequencies, magnitudes, "r", linewidth=1.0, label="FFT Spectrum")
+    
+    ax2.set_title(f"Frequency Spectrum (Fourier Transform of First 100 ms)")
+    ax2.set_xlabel("Frequency (Hz)")
+    ax2.set_ylabel("Magnitude")
+    ax2.grid(True)
+    ax2.set_xlim(0, args.fs / 2) 
+    
     plt.tight_layout()
 
     if args.save:
@@ -74,7 +93,6 @@ def main():
         print(f"saved plot to {args.save}")
     else:
         plt.show()
-
 
 if __name__ == "__main__":
     main()

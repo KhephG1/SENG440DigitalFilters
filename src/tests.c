@@ -6,7 +6,8 @@
 void test_parser(char *output, input_data_t *input_data, filter_t *filter)
 {
 
-    int data_samples = load_accelerometer_data(input_data, MAX_SAMPLES);
+    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
+                                               input_data, MAX_SAMPLES);
     int coeffs = load_coefficients("tools/FIR_filter_coeffs.txt", FIR, filter);
     FILE *file = fopen(output, "w");
     fprintf(file, "data samples: %d coeffs: %d", data_samples, coeffs);
@@ -43,7 +44,8 @@ void test_fixed_point_math(float *input, uint16_t size)
 void test_iir_filter(char *outputfile, input_data_t *input_data,
                      filter_t *filter)
 {
-    int data_samples = load_accelerometer_data(input_data, MAX_SAMPLES);
+    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
+                                               input_data, MAX_SAMPLES);
     load_coefficients("tools/IIR_filter_coeffs.txt", IIR, filter);
     printf("input data sf: %d, filter sf: %d %d\n",
            input_data->scale_factor_exp, filter->num_scale_factor_exp,

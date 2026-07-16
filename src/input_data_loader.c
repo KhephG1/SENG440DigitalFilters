@@ -4,16 +4,17 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#define INPUT_FILE "tools/data.csv"
 
 // returns the number of data samples loaded
-int load_accelerometer_data(input_data_t *input_data, uint32_t buffer_size)
+int load_accelerometer_data(const char *input_file, input_data_t *input_data,
+                            uint32_t buffer_size)
 {
     // open the input file
-    FILE *input = fopen(INPUT_FILE, "r");
+    FILE *input = fopen(input_file, "r");
     float temp[MAX_SAMPLES] = {};
     if (!input)
     {
+        printf("failed to load input");
         return -1;  // invalid file path
     }
     // read each line in the file

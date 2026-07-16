@@ -1,5 +1,6 @@
 #include "fixed_point_math.h"
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 int8_t convert_to_fixed(float *input, int16_t *output, uint32_t size)
 {
