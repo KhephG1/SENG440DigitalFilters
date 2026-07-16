@@ -10,6 +10,8 @@ typedef struct filter_t {
     int16_t y[MAX_COEFFS];
     uint16_t x_coeffs;
     uint16_t y_coeffs;
+    int8_t num_scale_factor_exp;
+    int8_t den_scale_factor_exp;
 
 } filter_t;
 typedef enum { FIR = 0, IIR } filter_type;

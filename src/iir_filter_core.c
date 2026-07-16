@@ -1,36 +1,41 @@
 #include "iir_filter_core.h"
 #include "coefficient_loader.h"
-
-void iir_filter(const int16_t *input, int16_t *output, size_t input_length,
-                filter_t *filter)
+#include "input_data_loader.h"
+void iir_filter(const input_data_t *input, int16_t *output,
+                uint32_t input_length, filter_t *filter)
 {
+    const int num_sf = filter->num_scale_factor_exp;
+    const int den_sf = filter->den_scale_factor_exp;
+    const int acc_sf = (num_sf > den_sf) ? num_sf : den_sf;
+
     // run the filter
-    for (int i = 0; i < input_length; i++)
+    for (int i = 0; i < (int)input_length; i++)
     {
-        int32_t accumulator = 0;
+        // int16 * int16 accumulated at full precision; the sum can overflow
+        // depending on the input
+        int32_t num_acc = 0;
         for (int j = 0; j < filter->x_coeffs; j++)
         {
-            // int16 * int16 = int32 TODO: I think virtual machine has integer
-            // multiplier but confirm
-            // input SF = 2^6, iir num SF = 2^28, iir den = 2^12 -> temp SF =
-            // 2^(6+28-12) = 2^22. add 1 << 21 for rounding
             if (i >= j)
             {
-                accumulator +=
-                    ((int)filter->x[j] * (int)input[i - j] + (1 << 21)) >> 22;
+                num_acc += filter->x[j] * input->input_data_buffer[i - j];
             }
         }
+
+        // assumes the denominator is normalised so y[0] == 1.0
+        int32_t den_acc = 0;
         for (int j = 1; j < filter->y_coeffs; j++)
         {
-            // int16 * int16 = int32
-            // input SF = 2^12, iir den SF = 2^12, iir den SF = 2^12 -> temp SF
-            // = 2^(12 + 12 - 12) = 2^12
             if (i >= j)
             {
-                accumulator +=
-                    ((int)filter->y[j] * (int)output[i - j] + (1 << 11)) >> 12;
+                den_acc += filter->y[j] * output[i - j];
             }
         }
-        output[i] = (int16_t)accumulator;
+
+        int32_t total =
+            (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
+        // round to nearest on the way back down to the input scale
+        total = (total + (1 << (acc_sf - 1))) >> acc_sf;
+        output[i] = total;
     }
 }

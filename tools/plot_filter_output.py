@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Scale factors used by the C code (see coefficient_loader.c / input_data_loader.c)
-OUTPUT_SF = 12  # IIR output is Q12
-INPUT_SF = 6    # accelerometer input is Q6 (data.csv is already float, so unused for it)
+OUTPUT_SF = 0  # IIR output is Q12
+INPUT_SF =  0   # accelerometer input is Q6 (data.csv is already float, so unused for it)
 FS = 25600      # sampling rate in Hz (matches IIR_filter.py)
 
 
