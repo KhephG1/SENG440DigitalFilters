@@ -2,10 +2,12 @@
 #include "input_data_loader.h"
 #include "tests.h"
 #include <stdio.h>
-int16_t input_samples[MAX_SAMPLES] = {};
-filter_t FIR_filter = {};
+input_data_t input = {};
+filter_t IIR_filter = {};
+
 int main()
 {
-    test_parser("output.txt", input_samples, &FIR_filter);
+    // test_parser("test_output/output.txt", input_samples, &IIR_filter);
+    test_iir_filter("test_output/filter_output.txt", &input, &IIR_filter);
     return 0;
 }

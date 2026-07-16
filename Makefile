@@ -1,7 +1,8 @@
 # 1. Compiler and Flags
 CC = gcc
 CFLAGS = -Iinclude -Wall -O2 -MMD -MP
-
+# Add the math library
+LDLIBS = -lm
 # 2. Directories and Files
 SRC_DIR = src
 OBJ_DIR = obj
@@ -23,7 +24,7 @@ all: $(TARGET)
 
 # Link object files into the final executable
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET)
+	$(CC) $(OBJS) -o $(TARGET) $(LDLIBS)
 
 # Pattern rule: Compile each .c file into a .o file
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
