@@ -15,5 +15,10 @@ typedef struct filter_t {
 
 } filter_t;
 typedef enum { FIR = 0, IIR } filter_type;
-int load_coefficients(const char *filename, filter_type type, filter_t *filter);
+int load_coefficients_fixed(const char *filename, filter_type type,
+                            filter_t *filter);
+
+int load_coefficients_float(const char *filename, filter_type type,
+                            float *filter_x, float *filter_y, int *coeffs_x,
+                            int *coeffs_y);
 #endif

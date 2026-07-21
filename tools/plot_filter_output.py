@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Scale factors used by the C code
-OUTPUT_SF = 17  # IIR output is Q6 (2^6 scale factor)
+OUTPUT_SF = 0  # IIR output is Q6 (2^6 scale factor)
 INPUT_SF =  0  # accelerometer input is Q0
 FS = 25600     # sampling rate in Hz
 
@@ -34,7 +34,7 @@ def main():
     t_ms = (np.arange(len(y)) / args.fs) * 1000.0
 
     # 2. Slice the arrays to strictly keep the first 100 ms of data
-    time_mask = t_ms <= 100.0
+    time_mask = t_ms <= 100000.0
     t_ms_window = t_ms[time_mask]
     y_window = y[time_mask]
     y_raw_window = y_raw[time_mask]
@@ -60,7 +60,7 @@ def main():
     ax1.set_title(title)
     ax1.set_xlabel("Time (ms)")
     ax1.set_ylabel("Amplitude")
-    ax1.set_xlim(0, 100.0) # Hard-lock viewing frame to 0-100 ms
+    ax1.set_xlim(0, 10000.0) # Hard-lock viewing frame to 0-100 ms
     ax1.grid(True)
     ax1.legend()
 

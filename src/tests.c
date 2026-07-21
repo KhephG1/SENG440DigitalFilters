@@ -6,9 +6,10 @@
 void test_parser(char *output, input_data_t *input_data, filter_t *filter)
 {
 
-    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
-                                               input_data, MAX_SAMPLES);
-    int coeffs = load_coefficients("tools/FIR_filter_coeffs.txt", FIR, filter);
+    int data_samples = load_accelerometer_data_fixed("tools/data.csv",
+                                                     input_data, MAX_SAMPLES);
+    int coeffs =
+        load_coefficients_fixed("tools/FIR_filter_coeffs.txt", FIR, filter);
     FILE *file = fopen(output, "w");
     fprintf(file, "data samples: %d coeffs: %d", data_samples, coeffs);
     for (int i = 0; i < data_samples; i++)
@@ -41,31 +42,30 @@ void test_fixed_point_math(float *input, uint16_t size)
     printf("max: %d, scale factor: 2^%d, input[0]: %f output[0]: %d", max, sf,
            input[0], output[0]);
 }
-void test_iir_filter(char *outputfile, input_data_t *input_data,
-                     filter_t *filter)
+void test_iir_filter(char *outputfile, float *input_data, float *filter_x,
+                     float *filter_y, int *coeffs_x, int *coeffs_y)
 {
-    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
-                                               input_data, MAX_SAMPLES);
-    load_coefficients("tools/IIR_filter_coeffs.txt", IIR, filter);
-    printf("input data sf: %d, filter sf: %d %d\n",
-           input_data->scale_factor_exp, filter->num_scale_factor_exp,
-           filter->den_scale_factor_exp);
-    for (int i = 0; i < filter->x_coeffs; i++)
+    int data_samples = load_accelerometer_data_float("tools/data.csv",
+                                                     input_data, MAX_SAMPLES);
+    load_coefficients_float("tools/IIR_filter_coeffs.txt", IIR, filter_x,
+                            filter_y, coeffs_x, coeffs_y);
+    for (int i = 0; i < *coeffs_x; i++)
     {
-        printf("filter x: %d\n", filter->x[i]);
+        printf("filter x: %f\n", filter_x[i]);
     }
-    printf("ycoeffs: %d\n", filter->y_coeffs);
-    for (int i = 0; i < filter->y_coeffs; i++)
+    printf("ycoeffs: %d\n", *coeffs_y);
+    for (int i = 0; i < *coeffs_y; i++)
     {
-        printf("filter y: %d %d\n", i, filter->y[i]);
+        printf("filter y: %d %f\n", i, filter_y[i]);
     }
 
-    int16_t filter_output[MAX_SAMPLES] = {};
-    iir_filter(input_data, filter_output, data_samples, filter);
+    float filter_output[MAX_SAMPLES] = {};
+    iir_filter_naive(input_data, filter_output, data_samples, filter_x,
+                     filter_y, coeffs_x, coeffs_y);
     FILE *file = fopen(outputfile, "w");
     for (int i = 0; i < data_samples; i++)
     {
-        fprintf(file, "%d\n", (int)filter_output[i]);
+        fprintf(file, "%f\n", filter_output[i]);
     }
     fclose(file);
 }
