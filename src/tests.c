@@ -79,9 +79,9 @@ void test_iir_filter_float(char *outputfile, float *input_data, float *filter_x,
 void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
                            filter_t *filter)
 {
-    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
-                                               input_data, MAX_SAMPLES);
-    load_coefficients("tools/IIR_filter_coeffs.txt", IIR, filter);
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/limit_cycle_test.csv", input_data, MAX_SAMPLES);
+    load_coefficients_fixed("tools/IIR_filter_coeffs.txt", IIR, filter);
     printf("input data sf: %d, filter sf: num %d den %d\n",
            input_data->scale_factor_exp, filter->num_scale_factor_exp,
            filter->den_scale_factor_exp);
@@ -97,7 +97,7 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
 
     int16_t filter_output[MAX_SAMPLES] = {};
     profiler_start();
-    iir_filter(input_data, filter_output, data_samples, filter);
+    iir_filter_fixed_point(input_data, filter_output, data_samples, filter);
     profiler_stop();
     FILE *file = fopen(outputfile, "w");
     for (int i = 0; i < data_samples; i++)
