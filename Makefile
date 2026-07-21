@@ -1,6 +1,6 @@
 # 1. Compiler and Flags
 CC = gcc
-CFLAGS = -Iinclude -Wall -MMD -MP -mfloat-abi=soft
+CFLAGS = -Iinclude -Wall -MMD -MP -mfloat-abi=softfp -mfpu=none
 #linker flags
 LDFLAGS = -mfloat-abi=soft
 
