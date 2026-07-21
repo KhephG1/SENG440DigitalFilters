@@ -1,9 +1,8 @@
 # 1. Compiler and Flags
 CC = gcc
-CFLAGS = -Iinclude -Wall -MMD -MP -mfloat-abi=softfp -mfpu=none
+CFLAGS = -Iinclude -Wall -MMD -MP -mfloat-abi=soft
 #linker flags
 LDFLAGS = -mfloat-abi=soft
-
 # Add the math library
 LDLIBS = -lm
 # 2. Directories and Files
