@@ -1,6 +1,8 @@
 #include "tests.h"
+#include "fir_filter_core.h"
 #include "fixed_point_math.h"
 #include "iir_filter_core.h"
+#include "performance_profiler.h"
 #include <stdio.h>
 #define MAX_TEST_SIZE (50)
 void test_parser(char *output, input_data_t *input_data, filter_t *filter)
@@ -63,6 +65,36 @@ void test_iir_filter(char *outputfile, float *input_data, float *filter_x,
     iir_filter_naive(input_data, filter_output, data_samples, filter_x,
                      filter_y, coeffs_x, coeffs_y);
     FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%f\n", filter_output[i]);
+    }
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    fclose(file);
+}
+void test_fir_filter(char *outputfile, input_data_t *input_data,
+                     filter_t *filter)
+{
+    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
+                                               input_data, MAX_SAMPLES);
+
+    load_coefficients("tools/FIR_filter_coeffs.txt", FIR, filter);
+
+    printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
+           filter->num_scale_factor_exp);
+
+    for (int i = 0; i < filter->x_coeffs; i++)
+    {
+        printf("filter x: %d\n", filter->x[i]);
+    }
+
+    int16_t filter_output[MAX_SAMPLES] = {};
+
+    fir_filter(input_data, filter_output, data_samples, filter->x,
+               filter->num_scale_factor_exp, filter->x_coeffs);
+
+    FILE *file = fopen(outputfile, "w");
+
     for (int i = 0; i < data_samples; i++)
     {
         fprintf(file, "%f\n", filter_output[i]);

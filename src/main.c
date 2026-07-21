@@ -11,6 +11,7 @@ int y_coeffs = 0;
 
 int main()
 {
+    test_fir_filter("test_output/filter_output.txt", &input, &FIR_filter);
     // test_parser("test_output/output.txt", input_samples, &IIR_filter);
     printf("here");
     test_iir_filter("test_output/filter_output.txt", input_data, filter_x,
