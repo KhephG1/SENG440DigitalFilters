@@ -62,8 +62,11 @@ void test_iir_filter(char *outputfile, float *input_data, float *filter_x,
     }
 
     float filter_output[MAX_SAMPLES] = {};
+    profiler_start();
     iir_filter_naive(input_data, filter_output, data_samples, filter_x,
                      filter_y, coeffs_x, coeffs_y);
+    profiler_stop();
+    printf("elapsed: %d", profiler_get_elapsed_time());
     FILE *file = fopen(outputfile, "w");
     for (int i = 0; i < data_samples; i++)
     {
@@ -75,10 +78,10 @@ void test_iir_filter(char *outputfile, float *input_data, float *filter_x,
 void test_fir_filter(char *outputfile, input_data_t *input_data,
                      filter_t *filter)
 {
-    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
-                                               input_data, MAX_SAMPLES);
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/limit_cycle_test.csv", input_data, MAX_SAMPLES);
 
-    load_coefficients("tools/FIR_filter_coeffs.txt", FIR, filter);
+    load_coefficients_fixed("tools/FIR_filter_coeffs.txt", FIR, filter);
 
     printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
            filter->num_scale_factor_exp);
@@ -97,7 +100,7 @@ void test_fir_filter(char *outputfile, input_data_t *input_data,
 
     for (int i = 0; i < data_samples; i++)
     {
-        fprintf(file, "%f\n", filter_output[i]);
+        fprintf(file, "%d\n", filter_output[i]);
     }
     fclose(file);
 }
