@@ -2,7 +2,8 @@
 #include "input_data_loader.h"
 #include "tests.h"
 #include <stdio.h>
-
+filter_t IIR_filter = {};
+input_data_t input = {};
 float input_data[MAX_SAMPLES];
 float filter_y[MAX_COEFFS];
 float filter_x[MAX_COEFFS];
@@ -13,8 +14,8 @@ int main()
 {
     // test_fir_filter("test_output/filter_output.txt", &input, &FIR_filter);
     //  test_parser("test_output/output.txt", input_samples, &IIR_filter);
-    printf("here");
-    test_iir_filter("test_output/filter_output.txt", input_data, filter_x,
-                    filter_y, &x_coeffs, &y_coeffs);
+    test_iir_filter_float("test_output/filter_output.txt", input_data, filter_x,
+                          filter_y, &x_coeffs, &y_coeffs);
+    test_iir_filter_fixed("test_output/filter_output.txt", &input, &IIR_filter);
     return 0;
 }

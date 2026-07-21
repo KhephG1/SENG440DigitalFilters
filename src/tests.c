@@ -44,8 +44,8 @@ void test_fixed_point_math(float *input, uint16_t size)
     printf("max: %d, scale factor: 2^%d, input[0]: %f output[0]: %d", max, sf,
            input[0], output[0]);
 }
-void test_iir_filter(char *outputfile, float *input_data, float *filter_x,
-                     float *filter_y, int *coeffs_x, int *coeffs_y)
+void test_iir_filter_float(char *outputfile, float *input_data, float *filter_x,
+                           float *filter_y, int *coeffs_x, int *coeffs_y)
 {
     int data_samples = load_accelerometer_data_float("tools/data.csv",
                                                      input_data, MAX_SAMPLES);
@@ -75,6 +75,39 @@ void test_iir_filter(char *outputfile, float *input_data, float *filter_x,
     printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
     fclose(file);
 }
+
+void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
+                           filter_t *filter)
+{
+    int data_samples = load_accelerometer_data("tools/limit_cycle_test.csv",
+                                               input_data, MAX_SAMPLES);
+    load_coefficients("tools/IIR_filter_coeffs.txt", IIR, filter);
+    printf("input data sf: %d, filter sf: num %d den %d\n",
+           input_data->scale_factor_exp, filter->num_scale_factor_exp,
+           filter->den_scale_factor_exp);
+    for (int i = 0; i < filter->x_coeffs; i++)
+    {
+        printf("filter x: %d\n", filter->x[i]);
+    }
+    printf("ycoeffs: %d\n", filter->y_coeffs);
+    for (int i = 0; i < filter->y_coeffs; i++)
+    {
+        printf("filter y: %d %d\n", i, filter->y[i]);
+    }
+
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    iir_filter(input_data, filter_output, data_samples, filter);
+    profiler_stop();
+    FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", (int)filter_output[i]);
+    }
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    fclose(file);
+}
+
 void test_fir_filter(char *outputfile, input_data_t *input_data,
                      filter_t *filter)
 {
