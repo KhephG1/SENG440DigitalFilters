@@ -9,7 +9,7 @@ float filter_y[MAX_COEFFS];
 float filter_x[MAX_COEFFS];
 int x_coeffs = 0;
 int y_coeffs = 0;
-
+;
 int main()
 {
     // test_fir_filter("test_output/filter_output.txt", &input, &FIR_filter);
@@ -17,5 +17,6 @@ int main()
     test_iir_filter_float("test_output/filter_output.txt", input_data, filter_x,
                           filter_y, &x_coeffs, &y_coeffs);
     test_iir_filter_fixed("test_output/filter_output.txt", &input, &IIR_filter);
+    test_iir_biquad_fixed("test_output/filter_output.txt", &input);
     return 0;
 }

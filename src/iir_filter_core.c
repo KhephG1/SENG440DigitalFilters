@@ -1,6 +1,47 @@
 #include "iir_filter_core.h"
 #include "coefficient_loader.h"
 #include "input_data_loader.h"
+#include <stdio.h>
+// biquad filter implemented as transposed direct form 2
+// https://arm-software.github.io/CMSIS-DSP/latest/group__BiquadCascadeDF2T.html?utm_source=chatgpt.com
+void iir_filter_biquad(const input_data_t *input, int16_t *output,
+                       uint32_t input_length, biquad_t *biquad)
+{
+    const int32_t temp_sf = input->scale_factor_exp;
+    const int32_t sf_diff = biquad->num_sf - biquad->den_sf;
+    int32_t t1 = 0, t2 = 0, t3 = 0, d1 = 0, d2 = 0;
+
+    for (int i = 0; i < (int)input_length; i++)
+    {
+        int32_t x = input->input_data_buffer[i];
+
+        t1 = x * biquad->b0;
+        t3 = t1 + d1;
+
+        output[i] = (int16_t)((t3 + (1 << (temp_sf - 1))) >> temp_sf);
+        printf("%d\n", output[i]);
+        t1 = x * biquad->b1;
+        t2 = output[i] * biquad->a1;
+
+        if (sf_diff > 0)
+            t2 <<= sf_diff;
+        else
+            t2 >>= -sf_diff;
+
+        d1 = t1 - t2 + d2;
+
+        t1 = x * biquad->b2;
+        t2 = output[i] * biquad->a2;
+
+        if (sf_diff > 0)
+            t2 <<= sf_diff;
+        else
+            t2 >>= -sf_diff;
+
+        d2 = t1 - t2;
+    }
+}
+
 void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
                             uint32_t input_length, filter_t *filter)
 {
@@ -32,7 +73,7 @@ void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
                 den_acc += (int64_t)filter->y[j] * output[i - j];
             }
         }
-
+        // for addition must ensure same scale factors
         int64_t total =
             (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
         // round to nearest on the way back down to the input scale

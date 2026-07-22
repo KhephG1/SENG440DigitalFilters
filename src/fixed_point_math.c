@@ -2,6 +2,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+// this function converts an array to its fixed point representation. It
+// computes the optimal scale factors for you based on the method learned in
+// class
 int8_t convert_to_fixed(float *input, int16_t *output, uint32_t size)
 {
     // find the biggest number in the input

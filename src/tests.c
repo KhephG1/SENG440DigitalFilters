@@ -66,13 +66,12 @@ void test_iir_filter_float(char *outputfile, float *input_data, float *filter_x,
     iir_filter_naive(input_data, filter_output, data_samples, filter_x,
                      filter_y, coeffs_x, coeffs_y);
     profiler_stop();
-    printf("elapsed: %d", profiler_get_elapsed_time());
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
     FILE *file = fopen(outputfile, "w");
     for (int i = 0; i < data_samples; i++)
     {
         fprintf(file, "%f\n", filter_output[i]);
     }
-    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
     fclose(file);
 }
 
@@ -99,12 +98,67 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
     profiler_start();
     iir_filter_fixed_point(input_data, filter_output, data_samples, filter);
     profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
     FILE *file = fopen(outputfile, "w");
     for (int i = 0; i < data_samples; i++)
     {
         fprintf(file, "%d\n", (int)filter_output[i]);
     }
+    fclose(file);
+}
+void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/limit_cycle_test.csv", input_data, MAX_SAMPLES);
+
+    const char *biquad_files[] = {"tools/biquad1.txt", "tools/biquad2.txt"
+
+    };
+
+    biquad_t biquads[2] = {};
+
+    load_biquad_fixed(biquad_files, biquads, 2);
+
+    printf("input data sf: %d\n", input_data->scale_factor_exp);
+    printf("biquad sf: num %d den %d\n", biquads[0].num_sf, biquads[0].den_sf);
+    printf("biquad sf: num %d den %d\n", biquads[1].num_sf, biquads[1].den_sf);
+
+    printf("b coefficients:\n");
+    printf("b0: %d\n", biquads[0].b0);
+    printf("b1: %d\n", biquads[0].b1);
+    printf("b2: %d\n", biquads[0].b2);
+
+    printf("a coefficients:\n");
+    printf("a1: %d\n", biquads[0].a1);
+    printf("a2: %d\n", biquads[0].a2);
+
+    printf("b coefficients:\n");
+    printf("b0: %d\n", biquads[1].b0);
+    printf("b1: %d\n", biquads[1].b1);
+    printf("b2: %d\n", biquads[1].b2);
+
+    printf("a coefficients:\n");
+    printf("a1: %d\n", biquads[1].a1);
+    printf("a2: %d\n", biquads[1].a2);
+    input_data_t filter1_output = {};
+    filter1_output.scale_factor_exp = input_data->scale_factor_exp;
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    iir_filter_biquad(input_data, filter1_output.input_data_buffer,
+                      data_samples, &biquads[0]);
+    iir_filter_biquad(&filter1_output, filter_output, data_samples,
+                      &biquads[1]);
+    profiler_stop();
+
     printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+
+    FILE *file = fopen(outputfile, "w");
+
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", (int)filter_output[i]);
+    }
+
     fclose(file);
 }
 

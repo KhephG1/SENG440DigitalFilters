@@ -9,4 +9,9 @@ void test_iir_filter_float(char *outputfile, float *input_data, float *filter_x,
 
 void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
                            filter_t *filter);
+
+void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data);
+
+void test_fir_filter(char *outputfile, input_data_t *input_data,
+                     filter_t *filter);
 #endif
