@@ -92,8 +92,9 @@ void test_fir_filter(char *outputfile, input_data_t *input_data,
 
     int16_t filter_output[MAX_SAMPLES] = {};
 
-    fir_filter(input_data, filter_output, data_samples, filter->x,
-            filter->num_scale_factor_exp, filter->x_coeffs);
+    profiler_start();
+    fir_filter(input_data, filter_output, data_samples, filter->x, filter->num_scale_factor_exp, filter->x_coeffs);
+    profiler_stop();
 
     FILE *file = fopen(outputfile, "w");
 

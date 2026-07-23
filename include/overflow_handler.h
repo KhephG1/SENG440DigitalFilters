@@ -4,6 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-int saturate(int value);
+int16_t saturate(int64_t value);
 
 #endif
