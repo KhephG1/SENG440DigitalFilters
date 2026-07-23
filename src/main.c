@@ -2,6 +2,8 @@
 #include "input_data_loader.h"
 #include "tests.h"
 #include <stdio.h>
+#include "overflow_handler.h"
+
 input_data_t input = {};
 filter_t FIR_filter = {};
 filter_t IIR_filter = {};
