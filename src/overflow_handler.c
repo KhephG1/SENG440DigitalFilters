@@ -1,5 +1,3 @@
 #include "overflow_handler.h"
 
-int saturate(int value){
-    return 1;
-}
+/* saturate_int16 is defined as a static inline function in overflow_handler.h */

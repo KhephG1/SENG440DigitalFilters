@@ -1,11 +1,12 @@
 # 1. Compiler and Flags
 CC = gcc
 #uncomment whats below for profiling with soft float. need to install the toolchain and this will cross compile for the arm vm with soft floating point instructions
-#TOOLCHAIN = $(HOME)/toolchains/armv5-eabi--glibc--stable-2025.08-1
-#CC = $(TOOLCHAIN)/bin/arm-buildroot-linux-gnueabi-gcc
-CFLAGS = -Iinclude -Wall -MMD -MP 
+# TOOLCHAIN = $(HOME)/toolchains/armv5-eabi--glibc--stable-2025.08-1
+# CC = $(TOOLCHAIN)/bin/arm-buildroot-linux-gnueabi-gcc
+#CFLAGS = -g -Iinclude -Wall -O2 -MMD -MP -mtune=cortex-a7 -mfloat-abi=soft
+CFLAGS = -g -Iinclude -Wall  -MMD -MP 
 #linker flags uncomment for cross compile with soft floating point (wont run locally if uncommented)
-#LDFLAGS = -static
+# LDFLAGS = -static -mfloat-abi=soft
 # Add the math library
 LDLIBS = -lm
 # 2. Directories and Files

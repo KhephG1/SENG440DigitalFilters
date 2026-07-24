@@ -26,7 +26,6 @@ int8_t convert_to_fixed(float *input, int16_t *output, uint32_t size,
             output[i] = 0;
         return 0;
     }
-    printf("max val %f\n", max_val);
     /*
     The problem to solve is 2^x <= max(int15) / max_val
     We need to solve for x (take the log!) and round with floor

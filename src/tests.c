@@ -9,8 +9,8 @@
 void test_parser(char *output, input_data_t *input_data, filter_t *filter)
 {
 
-    int data_samples = load_accelerometer_data_fixed("tools/data.csv",
-                                                     input_data, MAX_SAMPLES);
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/data_normalized.csv", input_data, MAX_SAMPLES);
     int coeffs =
         load_coefficients_fixed("tools/FIR_filter_coeffs.txt", FIR, filter);
     FILE *file = fopen(output, "w");
@@ -48,8 +48,8 @@ void test_fixed_point_math(float *input, uint16_t size)
 void test_iir_filter_float(char *outputfile, float *input_data, float *filter_x,
                            float *filter_y, int *coeffs_x, int *coeffs_y)
 {
-    int data_samples = load_accelerometer_data_float("tools/test_data/data.csv",
-                                                     input_data, MAX_SAMPLES);
+    int data_samples = load_accelerometer_data_float(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
     load_coefficients_float("tools/filter_coefficients/IIR_filter_coeffs.txt",
                             IIR, filter_x, filter_y, coeffs_x, coeffs_y);
     for (int i = 0; i < *coeffs_x; i++)
@@ -80,7 +80,7 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
                            filter_t *filter)
 {
     int data_samples = load_accelerometer_data_fixed(
-        "tools/test_data/limit_cycle_test.csv", input_data, MAX_SAMPLES);
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
     load_coefficients_fixed("tools/filter_coefficients/IIR_filter_coeffs.txt",
                             IIR, filter);
     printf("input data sf: %d, filter sf: num %d den %d\n",
@@ -111,8 +111,7 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
 void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data)
 {
     int data_samples = load_accelerometer_data_fixed(
-        "tools/test_data/limit_cycle_test.csv", input_data, MAX_SAMPLES);
-    printf("samp %d\n", data_samples);
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
     filter_t filter = {};
     if (!load_coefficients_fixed("tools/filter_coefficients/biquad_coeffs.txt",
                                  IIR, &filter))
@@ -185,22 +184,39 @@ void test_fir_filter(char *outputfile, input_data_t *input_data,
 
     printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
            filter->num_scale_factor_exp);
-
-    for (int i = 0; i < filter->x_coeffs; i++)
-    {
-        printf("filter x: %d\n", filter->x[i]);
-    }
-
     int16_t filter_output[MAX_SAMPLES] = {};
-
+    profiler_start();
     fir_filter(input_data, filter_output, data_samples, filter->x,
                filter->num_scale_factor_exp, filter->x_coeffs);
-
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
     FILE *file = fopen(outputfile, "w");
 
     for (int i = 0; i < data_samples; i++)
     {
         fprintf(file, "%d\n", filter_output[i]);
+    }
+    fclose(file);
+}
+
+void test_fir_filter_float(char *outputfile, float *input_data, float *filter_x,
+                           int *coeffs_x)
+{
+    int data_samples = load_accelerometer_data_float(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+    load_coefficients_float("tools/filter_coefficients/FIR_filter_coeffs.txt",
+                            FIR, filter_x, NULL, coeffs_x, 0);
+
+    float filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    fir_filter_naive(input_data, filter_output, data_samples, filter_x,
+                     coeffs_x);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%f\n", filter_output[i]);
     }
     fclose(file);
 }

@@ -3,8 +3,9 @@ import sys
 
 import numpy as np
 from scipy.signal import butter, freqz
-from scipy.signal import zpk2sos 
+from scipy.signal import zpk2sos, sosfilt 
 from scipy.signal import sosfreqz
+import matplotlib.pyplot as plt
 parser = argparse.ArgumentParser(
     description="Generate Butterworth IIR coefficients for the C filter loader."
 )
@@ -12,6 +13,7 @@ parser.add_argument("--order", type=int, default=4, help="filter order")
 parser.add_argument("--cutoff", type=float, default=500, help="cutoff frequency (Hz)")
 parser.add_argument("--fs", type=float, default=25.6e3, help="sample rate (Hz)")
 parser.add_argument("--plot", action="store_true", help="show magnitude/phase response")
+parser.add_argument("--plotfilt", action="store_true", help="apply and plot filter output")
 args = parser.parse_args()
 
 #the option below returns numerator and denominator coefficients for the direct form implementation of the filter
@@ -47,9 +49,16 @@ with open("tools/filter_coefficients/biquad_coeffs.txt", "w") as f:
     for biquad in sos:
         for i in range(3, 6):
             f.write(f"{biquad[i]:.8e}\n")
-    
+
+INPUT_FILENAME = "tools/test_data/data_normalized.csv" 
+
+# Load input samples (one value per line)
+input_data = np.loadtxt(INPUT_FILENAME)
+
+# Run the filter
+filtered_data = sosfilt(sos, input_data)
+
 if args.plot:
-    import matplotlib.pyplot as plt
 
     z, p, k = butter(args.order, args.cutoff, btype="low",analog=False, output="zpk", fs=args.fs)
     print(f"z={z}, p={p} k={k}", file=sys.stderr)
@@ -64,5 +73,15 @@ if args.plot:
     plt.plot(w, np.angle(h, deg=True))
     plt.xlabel("Angular Frequency")
     plt.ylabel("Phase (degrees)")
+    plt.tight_layout()
+    plt.show()
+
+if args.plotfilt:
+    plt.figure()
+    plt.plot(input_data, label="Input")
+    plt.plot(filtered_data, label="Filtered")
+    plt.xlabel("Sample")
+    plt.ylabel("Amplitude")
+    plt.legend()
     plt.tight_layout()
     plt.show()
