@@ -5,9 +5,11 @@
 #include "input_data_loader.h"
 #include <stddef.h>
 #include <stdint.h>
-void iir_filter_biquad(const input_data_t *input, int16_t *output,
-                       uint32_t input_length, int16_t *x_coeffs,
-                       int16_t *y_coeffs, int16_t num_Sf, int16_t den_sf);
+
+void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
+                                           int16_t *__restrict output,
+                                           uint32_t input_length,
+                                           filter_t *__restrict filter);
 void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
                             uint32_t input_length, filter_t *filter);
 void iir_filter_naive(const float *input, float *output, uint32_t input_length,

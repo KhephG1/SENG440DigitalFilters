@@ -108,6 +108,7 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
     }
     fclose(file);
 }
+
 void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data)
 {
     int data_samples = load_accelerometer_data_fixed(
@@ -173,6 +174,69 @@ void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data)
     fclose(file);
 }
 
+void test_iir_biquad_fixed_unrolled(char *outputfile, input_data_t *input_data)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+    filter_t filter = {};
+    if (!load_coefficients_fixed("tools/filter_coefficients/biquad_coeffs.txt",
+                                 IIR, &filter))
+    {
+        printf("error");
+    }
+    printf("input data sf: %d\n", input_data->scale_factor_exp);
+    printf("biquad sf: num %d den %d\n", filter.num_scale_factor_exp,
+           filter.den_scale_factor_exp);
+
+    input_data_t filter1_output = {};
+    filter1_output.scale_factor_exp = input_data->scale_factor_exp;
+    int16_t filter_output[MAX_SAMPLES] = {};
+
+    filter_t filter1 = {.x_coeffs = 3,
+                        .y_coeffs = 3,
+                        .num_scale_factor_exp = filter.num_scale_factor_exp,
+                        .den_scale_factor_exp = filter.den_scale_factor_exp};
+    filter_t filter2 = {.x_coeffs = 3,
+                        .y_coeffs = 3,
+                        .num_scale_factor_exp = filter.num_scale_factor_exp,
+                        .den_scale_factor_exp = filter.den_scale_factor_exp};
+    memcpy(filter1.x, filter.x, 3 * sizeof(int16_t));
+    memcpy(filter1.y, filter.y, 3 * sizeof(int16_t));
+    memcpy(filter2.x, &filter.x[3], 3 * sizeof(int16_t));
+    memcpy(filter2.y, &filter.y[3], 3 * sizeof(int16_t));
+
+    printf("stage 1 b coefficients:\n");
+    printf("b0: %d\n", filter1.x[0]);
+    printf("b1: %d\n", filter1.x[1]);
+    printf("b2: %d\n", filter1.x[2]);
+    printf("stage 1 a coefficients:\n");
+    printf("a1: %d\n", filter1.y[0]);
+    printf("a2: %d\n", filter1.y[1]);
+    printf("stage 2 b coefficients:\n");
+    printf("b0: %d\n", filter2.x[0]);
+    printf("b1: %d\n", filter2.x[1]);
+    printf("b2: %d\n", filter2.x[2]);
+    printf("stage 2 a coefficients:\n");
+    printf("a1: %d\n", filter2.y[0]);
+    printf("a2: %d\n", filter2.y[1]);
+
+    profiler_start();
+    iir_filter_fixed_point_with_unrolling(
+        input_data, filter1_output.input_data_buffer, data_samples, &filter1);
+    iir_filter_fixed_point_with_unrolling(&filter1_output, filter_output,
+                                          data_samples, &filter2);
+    profiler_stop();
+
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+
+    FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", (int)filter_output[i]);
+    }
+    fclose(file);
+}
+
 void test_fir_filter(char *outputfile, input_data_t *input_data,
                      filter_t *filter)
 {
@@ -217,6 +281,33 @@ void test_fir_filter_float(char *outputfile, float *input_data, float *filter_x,
     for (int i = 0; i < data_samples; i++)
     {
         fprintf(file, "%f\n", filter_output[i]);
+    }
+    fclose(file);
+}
+
+void test_fir_filter_neon(char *outputfile, input_data_t *input_data,
+                          filter_t *filter)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+
+    load_coefficients_fixed("tools/filter_coefficients/FIR_filter_coeffs.txt",
+                            FIR, filter);
+
+    printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
+           filter->num_scale_factor_exp);
+
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    fir_filter_neon_wrapper(input_data, filter_output, data_samples, filter->x,
+                            filter->num_scale_factor_exp, filter->x_coeffs);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+
+    FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", filter_output[i]);
     }
     fclose(file);
 }

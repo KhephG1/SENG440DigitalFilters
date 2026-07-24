@@ -4,25 +4,32 @@
 #include <arm_neon.h>
 #include <string.h>
 
-// Assumes:
-//  - coeffs_length is reasonable (fits in a state buffer)
-//  - caller maintains state across calls, OR input is zero-padded on the left
-//    with (coeffs_length - 1) samples of history
-//  - scale_factor is a compile-time constant if possible (see note below)
+void fir_filter_neon_helper(const input_data_t *input, int16_t *output,
+                            uint32_t input_length, const int16_t *coeffs,
+                            int16_t scale_factor, uint32_t coeffs_length)
+{
+    static int16_t history_buf[MAX_SAMPLES + 128];
+
+    if (coeffs_length == 0 || input_length == 0)
+        return;
+
+    uint32_t hist = coeffs_length - 1;
+    memset(history_buf, 0, hist * sizeof(int16_t));
+    memcpy(&history_buf[hist], input->input_data_buffer,
+           input_length * sizeof(int16_t));
+
+    fir_filter_neon(history_buf, output, input_length, coeffs, scale_factor,
+                    coeffs_length);
+}
+// scale factor applied must be 15
 void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
                                                          // + coeffs_length - 1
                      int16_t *output,                    // length: input_length
                      uint32_t input_length,
                      const int16_t *coeffs,  // length: coeffs_length
-                     int scale_factor, uint32_t coeffs_length)
+                     uint32_t coeffs_length)
 {
-    // The history-prepended input means input_with_history[n + coeffs_length -
-    // 1] corresponds to the n-th "current" sample. For output sample n, we
-    // convolve coeffs[0..N-1] with input_with_history[n + N - 1 - k] for k in
-    // 0..N-1, i.e. the N samples ending at position (n + N - 1).
-
     uint32_t n = 0;
-
     // Process 8 output samples per iteration
     for (; n + 8 <= input_length; n += 8)
     {
@@ -48,9 +55,9 @@ void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
         }
 
         int16x4_t out_lo, out_hi;
-
-        out_lo = vqrshrn_n_s32(acc_lo, scale_factor);
-        out_hi = vqrshrn_n_s32(acc_hi, scale_factor);
+        // shift amount needs to be a complile time constant
+        out_lo = vqrshrn_n_s32(acc_lo, 15);
+        out_hi = vqrshrn_n_s32(acc_hi, 15);
 
         int16x8_t out = vcombine_s16(out_lo, out_hi);
         vst1q_s16(&output[n], out);
@@ -66,6 +73,7 @@ void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
                    coeffs[k];
         }
         int32_t shifted = (acc + (1 << (scale_factor - 1))) >> scale_factor;
+        // saturate
         if (shifted > 32767)
             shifted = 32767;
         if (shifted < -32768)
@@ -98,7 +106,6 @@ void fir_filter(const input_data_t *input, int16_t *output,
 void fir_filter_naive(const float *input, float *output, uint32_t input_length,
                       float *filter_x, int *coeffsx)
 {
-
     for (uint32_t n = 0; n < input_length; n++)
     {
         float acc = 0;

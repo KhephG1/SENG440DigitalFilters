@@ -94,35 +94,6 @@ void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
     }
 }
 
-void iir_filter_naive(const float *input, float *output, uint32_t input_length,
-                      float *filter_x, float *filter_y, int *coeffsx,
-                      int *coeffsy)
-{
-
-    for (int i = 0; i < (int)input_length; i++)
-    {
-        float num_acc = 0;
-        for (int j = 0; j < *coeffsx; j++)
-        {
-            if (i >= j)
-            {
-                num_acc += filter_x[j] * input[i - j];
-            }
-        }
-
-        // assumes the denominator is normalised so y[0] == 1.0
-        float den_acc = 0;
-        for (int j = 1; j < *coeffsy; j++)
-        {
-            if (i >= j)
-            {
-                den_acc += filter_y[j] * output[i - j];
-            }
-        }
-        output[i] = num_acc - den_acc;
-    }
-}
-
 // don't use. An attempt at achieving better optimization with tdfII. as
 // discussed in
 // https://arm-software.github.io/CMSIS-DSP/latest/group__BiquadCascadeDF2T.html
