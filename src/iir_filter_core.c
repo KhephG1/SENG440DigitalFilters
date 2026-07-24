@@ -54,51 +54,6 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
     }
 }
 
-void iir_filter_fixed_point_local_alias(const input_data_t *__restrict input,
-                                        int16_t *__restrict output,
-                                        uint32_t input_length, filter_t *filter)
-{
-    const int num_sf = filter->num_scale_factor_exp;
-    const int den_sf = filter->den_scale_factor_exp;
-    const int acc_sf = (num_sf > den_sf) ? num_sf : den_sf;
-    const int num_shift = acc_sf - num_sf;
-    const int den_shift = acc_sf - den_sf;
-    const int64_t round_add = (int64_t)1 << (acc_sf - 1);
-    // allow storage of coefficients in registers by using restrict
-    const int16_t *__restrict x = filter->x;
-    const int16_t *__restrict y = filter->y;
-    const int x_coeffs = filter->x_coeffs;
-    const int y_coeffs = filter->y_coeffs;
-
-    const int16_t *__restrict in = input->input_data_buffer;
-    const int len = (int)input_length;
-
-    for (int i = 0; i < len; i++)
-    {
-        int64_t num_acc = 0;
-        for (int j = 0; j < x_coeffs; j++)
-        {
-            if (i >= j)
-            {
-                num_acc += (int64_t)x[j] * (int64_t)in[i - j];
-            }
-        }
-
-        int64_t den_acc = 0;
-        for (int j = 1; j < y_coeffs; j++)
-        {
-            if (i >= j)
-            {
-                den_acc += (int64_t)y[j] * (int64_t)output[i - j];
-            }
-        }
-
-        int64_t total = (num_acc << num_shift) - (den_acc << den_shift);
-        total = (total + round_add) >> acc_sf;
-        output[i] = saturate_int16(total);
-    }
-}
-
 void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
                             uint32_t input_length, filter_t *filter)
 {
