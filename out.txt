@@ -1,0 +1,12 @@
+filter x: 0.000012
+filter x: 0.000049
+filter x: 0.000073
+filter x: 0.000049
+filter x: 0.000012
+ycoeffs: 5
+filter y: 0 1.000000
+filter y: 1 -3.679418
+filter y: 2 5.088645
+filter y: 3 -3.134517
+filter y: 4 0.725485
+time elapsed in ticks: 5164

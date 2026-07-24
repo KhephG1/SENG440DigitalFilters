@@ -31,7 +31,7 @@ int load_accelerometer_data_fixed(const char *input_file,
         i++;
     }
     input_data->scale_factor_exp =
-        convert_to_fixed(temp, input_data->input_data_buffer, i);
+        convert_to_fixed(temp, input_data->input_data_buffer, i, pow(2, 15));
     fclose(input);
     return i;
 }

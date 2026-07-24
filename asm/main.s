@@ -4,8 +4,14 @@
 # GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
 # options passed: -mtune=generic -march=x86-64 -mtls-dialect=gnu2
 	.text
-	.globl	IIR_filter
+	.globl	FIR_filter
 	.bss
+	.align 32
+	.type	FIR_filter, @object
+	.size	FIR_filter, 406
+FIR_filter:
+	.zero	406
+	.globl	IIR_filter
 	.align 32
 	.type	IIR_filter, @object
 	.size	IIR_filter, 406
@@ -48,8 +54,9 @@ x_coeffs:
 y_coeffs:
 	.zero	4
 	.section	.rodata
+	.align 8
 .LC0:
-	.string	"test_output/filter_output.txt"
+	.string	"tools/test_output/filter_output.txt"
 	.text
 	.globl	main
 	.type	main, @function
@@ -61,26 +68,14 @@ main:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp	#,
 	.cfi_def_cfa_register 6
-# src/main.c:17:     test_iir_filter_float("test_output/filter_output.txt", input_data, filter_x,
-	movl	$y_coeffs, %r9d	#,
-	movl	$x_coeffs, %r8d	#,
-	movl	$filter_y, %ecx	#,
-	movl	$filter_x, %edx	#,
-	movl	$input_data, %esi	#,
-	movl	$.LC0, %edi	#,
-	call	test_iir_filter_float	#
-# src/main.c:19:     test_iir_filter_fixed("test_output/filter_output.txt", &input, &IIR_filter);
+# src/main.c:22:     test_iir_filter_fixed("tools/test_output/filter_output.txt", &input,
 	movl	$IIR_filter, %edx	#,
 	movl	$input, %esi	#,
 	movl	$.LC0, %edi	#,
 	call	test_iir_filter_fixed	#
-# src/main.c:20:     test_iir_biquad_fixed("test_output/filter_output.txt", &input);
-	movl	$input, %esi	#,
-	movl	$.LC0, %edi	#,
-	call	test_iir_biquad_fixed	#
-# src/main.c:21:     return 0;
-	movl	$0, %eax	#, _5
-# src/main.c:22: }
+# src/main.c:25:     return 0;
+	movl	$0, %eax	#, _3
+# src/main.c:26: }
 	popq	%rbp	#
 	.cfi_def_cfa 7, 8
 	ret	

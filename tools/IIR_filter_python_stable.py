@@ -3,7 +3,8 @@ import sys
 
 import numpy as np
 from scipy.signal import butter, freqz
-
+from scipy.signal import zpk2sos 
+from scipy.signal import sosfreqz
 parser = argparse.ArgumentParser(
     description="Generate Butterworth IIR coefficients for the C filter loader."
 )
@@ -25,25 +26,35 @@ args = parser.parse_args()
 #     print(f"{c:.8e}")
 
 #the option below returns coefficients for the biquad implementation of the filter
-sos = butter(args.order, args.cutoff, btype="low", analog=False, output="sos", fs=args.fs)
+z,p,k = butter(args.order, args.cutoff, btype="low", analog=False, output="zpk", fs=args.fs)
+b,a = butter(args.order, args.cutoff, btype="low", analog=False, output="ba", fs=args.fs)
+sos  = zpk2sos(z,p,1, pairing="nearest")
+#Distribute the real gain 'k' evenly across both sections
+num_sections = sos.shape[0]
+gain_per_section = k ** (1.0 / num_sections)
 
-with open("tools/biquad1.txt", "w") as f1, open("tools/biquad2.txt", "w") as f2:
-    files = [f1, f2]
-    for biquad, f in zip(sos, files):
-        f.write("num\n")
+# Multiply the numerator coefficients (b0, b1, b2) of each section by the split gain
+sos[:, :3] *= gain_per_section
+
+print("Balanced SOS Matrix:\n", sos)
+
+with open("tools/filter_coefficients/biquad_coeffs.txt", "w") as f:
+    f.write("num\n")
+    for biquad in sos:
         for i in range(3):
             f.write(f"{biquad[i]:.8e}\n")
-        f.write("den\n")
-        for i in range(4, 6):
-            f.write(f"{-biquad[i]:.8e}\n")
-# z, p, k = butter(args.order, args.cutoff, btype="low",analog=False, output="zpk", fs=args.fs)
-# print(f"z={z}, p={p} k={k}", file=sys.stderr)
-# print(f"max pole magnitude {np.max(np.abs(p)):.6f}", file=sys.stderr)
-
+    f.write("den\n")
+    for biquad in sos:
+        for i in range(3, 6):
+            f.write(f"{biquad[i]:.8e}\n")
+    
 if args.plot:
     import matplotlib.pyplot as plt
 
-    w, h = freqz(num, den, worN=512, fs=args.fs)
+    z, p, k = butter(args.order, args.cutoff, btype="low",analog=False, output="zpk", fs=args.fs)
+    print(f"z={z}, p={p} k={k}", file=sys.stderr)
+    print(f"max pole magnitude {np.max(np.abs(p)):.6f}", file=sys.stderr)
+    w, h = sosfreqz(sos, worN=512, fs=args.fs)
     plt.figure()
     plt.subplot(121)
     plt.plot(w, np.abs(h))

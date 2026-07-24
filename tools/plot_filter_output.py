@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Scale factors used by the C code
-OUTPUT_SF = 0  # IIR output is Q6 (2^6 scale factor)
-INPUT_SF =  0  # accelerometer input is Q0
+OUTPUT_SF = 7  # IIR output is Q15 
 FS = 25600     # sampling rate in Hz
 
 INT16_MIN = -32768

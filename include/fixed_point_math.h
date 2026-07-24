@@ -9,4 +9,5 @@ a buffer of int16_t to store the scaled numbers
 under constraint that scale factor must be a power of 2
 */
 
-int8_t convert_to_fixed(float *input, int16_t *output, uint32_t size);
+int8_t convert_to_fixed(float *input, int16_t *output, uint32_t size,
+                        uint32_t representation_max);

@@ -84,13 +84,13 @@ load_accelerometer_data_fixed:
 # src/input_data_loader.c:24:     while (fscanf(input, "%f", &sample) == 1)
 	cmpl	$1, %eax	#, _3
 	je	.L6	#,
-# src/input_data_loader.c:34:         convert_to_fixed(temp, input_data->input_data_buffer, i);
+# src/input_data_loader.c:34:         convert_to_fixed(temp, input_data->input_data_buffer, i, pow(2, 15));
 	movl	-4(%rbp), %edx	# i, i.2_4
-# src/input_data_loader.c:34:         convert_to_fixed(temp, input_data->input_data_buffer, i);
-	movq	-1200048(%rbp), %rcx	# input_data, _5
-# src/input_data_loader.c:34:         convert_to_fixed(temp, input_data->input_data_buffer, i);
+# src/input_data_loader.c:34:         convert_to_fixed(temp, input_data->input_data_buffer, i, pow(2, 15));
+	movq	-1200048(%rbp), %rsi	# input_data, _5
+# src/input_data_loader.c:34:         convert_to_fixed(temp, input_data->input_data_buffer, i, pow(2, 15));
 	leaq	-1200016(%rbp), %rax	#, tmp117
-	movq	%rcx, %rsi	# _5,
+	movl	$32768, %ecx	#,
 	movq	%rax, %rdi	# tmp117,
 	call	convert_to_fixed	#
 # src/input_data_loader.c:33:     input_data->scale_factor_exp =

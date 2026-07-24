@@ -4,6 +4,7 @@
 #include "iir_filter_core.h"
 #include "performance_profiler.h"
 #include <stdio.h>
+#include <string.h>
 #define MAX_TEST_SIZE (50)
 void test_parser(char *output, input_data_t *input_data, filter_t *filter)
 {
@@ -39,7 +40,7 @@ void test_fixed_point_math(float *input, uint16_t size)
             max = input[i];
         }
     }
-    int8_t sf = convert_to_fixed(input, output, size);
+    int8_t sf = convert_to_fixed(input, output, size, pow(2, 15));
 
     printf("max: %d, scale factor: 2^%d, input[0]: %f output[0]: %d", max, sf,
            input[0], output[0]);
@@ -47,10 +48,10 @@ void test_fixed_point_math(float *input, uint16_t size)
 void test_iir_filter_float(char *outputfile, float *input_data, float *filter_x,
                            float *filter_y, int *coeffs_x, int *coeffs_y)
 {
-    int data_samples = load_accelerometer_data_float("tools/data.csv",
+    int data_samples = load_accelerometer_data_float("tools/test_data/data.csv",
                                                      input_data, MAX_SAMPLES);
-    load_coefficients_float("tools/IIR_filter_coeffs.txt", IIR, filter_x,
-                            filter_y, coeffs_x, coeffs_y);
+    load_coefficients_float("tools/filter_coefficients/IIR_filter_coeffs.txt",
+                            IIR, filter_x, filter_y, coeffs_x, coeffs_y);
     for (int i = 0; i < *coeffs_x; i++)
     {
         printf("filter x: %f\n", filter_x[i]);
@@ -79,8 +80,9 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
                            filter_t *filter)
 {
     int data_samples = load_accelerometer_data_fixed(
-        "tools/limit_cycle_test.csv", input_data, MAX_SAMPLES);
-    load_coefficients_fixed("tools/IIR_filter_coeffs.txt", IIR, filter);
+        "tools/test_data/limit_cycle_test.csv", input_data, MAX_SAMPLES);
+    load_coefficients_fixed("tools/filter_coefficients/IIR_filter_coeffs.txt",
+                            IIR, filter);
     printf("input data sf: %d, filter sf: num %d den %d\n",
            input_data->scale_factor_exp, filter->num_scale_factor_exp,
            filter->den_scale_factor_exp);
@@ -109,45 +111,55 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
 void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data)
 {
     int data_samples = load_accelerometer_data_fixed(
-        "tools/limit_cycle_test.csv", input_data, MAX_SAMPLES);
-
-    const char *biquad_files[] = {"tools/biquad1.txt", "tools/biquad2.txt"
-
-    };
-
-    biquad_t biquads[2] = {};
-
-    load_biquad_fixed(biquad_files, biquads, 2);
-
+        "tools/test_data/limit_cycle_test.csv", input_data, MAX_SAMPLES);
+    printf("samp %d\n", data_samples);
+    filter_t filter = {};
+    if (!load_coefficients_fixed("tools/filter_coefficients/biquad_coeffs.txt",
+                                 IIR, &filter))
+    {
+        printf("error");
+    }
     printf("input data sf: %d\n", input_data->scale_factor_exp);
-    printf("biquad sf: num %d den %d\n", biquads[0].num_sf, biquads[0].den_sf);
-    printf("biquad sf: num %d den %d\n", biquads[1].num_sf, biquads[1].den_sf);
-
-    printf("b coefficients:\n");
-    printf("b0: %d\n", biquads[0].b0);
-    printf("b1: %d\n", biquads[0].b1);
-    printf("b2: %d\n", biquads[0].b2);
-
-    printf("a coefficients:\n");
-    printf("a1: %d\n", biquads[0].a1);
-    printf("a2: %d\n", biquads[0].a2);
-
-    printf("b coefficients:\n");
-    printf("b0: %d\n", biquads[1].b0);
-    printf("b1: %d\n", biquads[1].b1);
-    printf("b2: %d\n", biquads[1].b2);
-
-    printf("a coefficients:\n");
-    printf("a1: %d\n", biquads[1].a1);
-    printf("a2: %d\n", biquads[1].a2);
+    printf("biquad sf: num %d den %d\n", filter.num_scale_factor_exp,
+           filter.den_scale_factor_exp);
     input_data_t filter1_output = {};
     filter1_output.scale_factor_exp = input_data->scale_factor_exp;
     int16_t filter_output[MAX_SAMPLES] = {};
+    filter_t filter1 = {.x_coeffs = 3,
+                        .y_coeffs = 3,
+                        .num_scale_factor_exp = filter.num_scale_factor_exp,
+                        .den_scale_factor_exp = filter.den_scale_factor_exp};
+    filter_t filter2 = {.x_coeffs = 3,
+                        .y_coeffs = 3,
+                        .num_scale_factor_exp = filter.num_scale_factor_exp,
+                        .den_scale_factor_exp = filter.den_scale_factor_exp};
+    memcpy(filter1.x, filter.x, 3 * sizeof(int16_t));
+    memcpy(filter1.y, filter.y, 3 * sizeof(int16_t));
+    memcpy(filter2.x, &filter.x[3], 3 * sizeof(int16_t));
+    memcpy(filter2.y, &filter.y[3], 3 * sizeof(int16_t));
+    printf("b coefficients:\n");
+    printf("b0: %d\n", filter1.x[0]);
+    printf("b1: %d\n", filter1.x[1]);
+    printf("b2: %d\n", filter1.x[2]);
+
+    printf("a coefficients:\n");
+    printf("a1: %d\n", filter1.y[0]);
+    printf("a2: %d\n", filter1.y[1]);
+
+    printf("b coefficients:\n");
+    printf("b0: %d\n", filter2.x[0]);
+    printf("b1: %d\n", filter2.x[1]);
+    printf("b2: %d\n", filter2.x[2]);
+
+    printf("a coefficients:\n");
+    printf("a1: %d\n", filter2.y[0]);
+    printf("a2: %d\n", filter2.y[1]);
+
     profiler_start();
-    iir_filter_biquad(input_data, filter1_output.input_data_buffer,
-                      data_samples, &biquads[0]);
-    iir_filter_biquad(&filter1_output, filter_output, data_samples,
-                      &biquads[1]);
+    iir_filter_fixed_point(input_data, filter1_output.input_data_buffer,
+                           data_samples, &filter1);
+    iir_filter_fixed_point(&filter1_output, filter_output, data_samples,
+                           &filter2);
     profiler_stop();
 
     printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
@@ -166,9 +178,10 @@ void test_fir_filter(char *outputfile, input_data_t *input_data,
                      filter_t *filter)
 {
     int data_samples = load_accelerometer_data_fixed(
-        "tools/limit_cycle_test.csv", input_data, MAX_SAMPLES);
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
 
-    load_coefficients_fixed("tools/FIR_filter_coeffs.txt", FIR, filter);
+    load_coefficients_fixed("tools/filter_coefficients/FIR_filter_coeffs.txt",
+                            FIR, filter);
 
     printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
            filter->num_scale_factor_exp);

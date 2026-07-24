@@ -37,7 +37,7 @@ int load_coefficients_fixed(const char *filename, filter_type type,
         }
         filter->x_coeffs = i;
         filter->num_scale_factor_exp =
-            convert_to_fixed(temp, filter->x, filter->x_coeffs);
+            convert_to_fixed(temp, filter->x, filter->x_coeffs, pow(2, 15));
         fclose(input);
         return i;
     }
@@ -51,7 +51,7 @@ int load_coefficients_fixed(const char *filename, filter_type type,
         }
         filter->x_coeffs = i;
         filter->num_scale_factor_exp =
-            convert_to_fixed(temp, filter->x, filter->x_coeffs);
+            convert_to_fixed(temp, filter->x, filter->x_coeffs, pow(2, 15));
         char *result =
             fgets(label, MAXLINE, input);  // get rid of the "den" line
         while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS && result)
@@ -62,7 +62,7 @@ int load_coefficients_fixed(const char *filename, filter_type type,
         }
         filter->y_coeffs = j;
         filter->den_scale_factor_exp =
-            convert_to_fixed(temp, filter->y, filter->y_coeffs);
+            convert_to_fixed(temp, filter->y, filter->y_coeffs, pow(2, 15));
         fclose(input);
         return i + j;
     }
@@ -131,76 +131,4 @@ int load_coefficients_float(const char *filename, filter_type type,
         // invalid input
         return -1;
     }
-}
-
-int load_biquad_fixed(const char **filenames, biquad_t *biquads,
-                      int num_biquads)
-{
-    for (int i = 0; i < num_biquads; i++)
-    {
-        FILE *input = fopen(filenames[i], "r");
-
-        if (!input)
-        {
-            return -1;
-        }
-
-        char label[MAXLINE];
-
-        float num[3];
-        float den[2];
-
-        int16_t num_fixed[3];
-        int16_t den_fixed[2];
-
-        // Read "num"
-        if (fscanf(input, "%s", label) != 1 || strcmp(label, "num") != 0)
-        {
-            fclose(input);
-            return -1;
-        }
-        // Read b0,b1,b2
-        for (int j = 0; j < 3; j++)
-        {
-            if (fscanf(input, "%f", &num[j]) != 1)
-            {
-                fclose(input);
-                return -1;
-            }
-        }
-
-        // Read "den"
-        if (fscanf(input, "%s", label) != 1 || strcmp(label, "den") != 0)
-        {
-            fclose(input);
-            return -1;
-        }
-
-        // Read a1,a2
-        for (int j = 0; j < 2; j++)
-        {
-            if (fscanf(input, "%f", &den[j]) != 1)
-            {
-                fclose(input);
-                return -1;
-            }
-        }
-
-        fclose(input);
-
-        // Convert independently
-        biquads[i].num_sf = convert_to_fixed(num, num_fixed, 3);
-        biquads[i].den_sf = convert_to_fixed(den, den_fixed, 2);
-
-        printf("here: num sf %d, den_sf %d\n", biquads[i].num_sf,
-               biquads[i].den_sf);
-        biquads[i].b0 = num_fixed[0];
-        biquads[i].b1 = num_fixed[1];
-        biquads[i].b2 = num_fixed[2];
-
-        biquads[i].a1 = den_fixed[0];
-        biquads[i].a2 = den_fixed[1];
-    }
-
-    return num_biquads;
 }
