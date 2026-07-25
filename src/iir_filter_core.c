@@ -16,6 +16,7 @@ void iir_filter_neon(const input_data_t *__restrict input,
     // different factor than numerator coefficients)
     const int num_sf = filter->num_scale_factor_exp;
     const int den_sf = filter->den_scale_factor_exp;
+    // neon: shift amounts must be compile time constants
     if (num_sf != 22 || den_sf != 14)
     {
         printf("error vector operations require shifting by amount known at "
@@ -37,22 +38,32 @@ void iir_filter_neon(const input_data_t *__restrict input,
         int32_t total = temp1 + temp2 - temp3;
         output[1] = saturate(total);
     }
+    // load the coefficients into neon registers before the loop
+    // we only have 3 numerator and two denominator coefficients so pad the
+    // remaining lanes with 0 so that additional terms don't affact sum (0 *
+    // input[i] = 0)
     int16x4_t vx = {filter->x[2], filter->x[1], filter->x[0], 0};
     int16x4_t vy = {filter->y[2], filter->y[1], 0, 0};
+    // load the round factor into neon registers
     int32x4_t vround_num = vdupq_n_s32(1 << 21);
     int32x4_t vround_den = vdupq_n_s32(1 << 13);
     for (int i = 2; i < input_length; i++)
     {
+        // load the input (see comment above for how we avoid the fourth lane
+        // affecting our sum)
         int16x4_t v_in = vld1_s16(in + i - 2);
+        // multiply vector of coefficients with vector of inputs
         int32x4_t res = vmull_s16(v_in, vx);
-
+        // apply rounding
         res = vaddq_s32(res, vround_num);
+        // accumulate the 4 lanes into a scalar
         int32x4_t shifted = vshrq_n_s32(res, 22);
         int32x2_t lo = vget_low_s32(shifted);
         int32x2_t hi = vget_high_s32(shifted);
         lo = vpadd_s32(lo, hi);
         lo = vpadd_s32(lo, lo);
         int32_t num_acc = vget_lane_s32(lo, 0);
+        // do the same as above for denominator coefficients
         int16x4_t v_out = vld1_s16(output + i - 2);
         res = vmull_s16(v_out, vy);
         res = vaddq_s32(res, vround_den);
@@ -62,6 +73,8 @@ void iir_filter_neon(const input_data_t *__restrict input,
         lo = vpadd_s32(lo, hi);
         lo = vpadd_s32(lo, lo);
         int32_t den_acc = vget_lane_s32(lo, 0);
+        // subract the accumulated numerator / denominator factors and apply
+        // saturation
         output[i] = saturate(num_acc - den_acc);
     }
 }
