@@ -30,11 +30,11 @@ int main()
     //                       &IIR_filter);
     // printf("IIR Filter Overflows: %d\n", get_overflow_count());
     // test_iir_biquad_fixed("tools/test_output/filter_output_5.txt", &input);
-    test_iir_biquad_fixed_unrolled("tools/test_output/test_output_6.txt",
-                                   &input);
+    // test_iir_biquad_fixed_unrolled("tools/test_output/test_output_6.txt",
+    //                                &input);
     // test_fir_filter_neon("tools/test_output/test_output_7.txt", &input,
     // &FIR_filter);
-    // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
+    test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
 
     return 0;
 }
