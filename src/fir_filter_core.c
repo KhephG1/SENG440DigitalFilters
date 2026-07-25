@@ -1,4 +1,5 @@
 #include "fir_filter_core.h"
+#include "overflow_handler.h"
 
 void fir_filter(const input_data_t *input, int16_t *output, uint32_t input_length, const int16_t *coeffs, int16_t scale_factor, uint32_t coeffs_length){
     for (uint32_t n = 0; n < input_length; n++) {
@@ -9,6 +10,6 @@ void fir_filter(const input_data_t *input, int16_t *output, uint32_t input_lengt
                 acc += (int32_t)input->input_data_buffer[n - k] * coeffs[k];
             }
         }
-        output[n] = (int16_t)(acc >> scale_factor);
+        output[n] = saturate(acc >> scale_factor);
     }
 }
