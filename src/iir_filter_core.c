@@ -10,6 +10,8 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
                                            uint32_t input_length,
                                            filter_t *__restrict filter)
 {
+    // compute the shifts to be applied (denominator coeffcients scaled with
+    // different factor than numerator coefficients)
     const int num_sf = filter->num_scale_factor_exp;
     const int den_sf = filter->den_scale_factor_exp;
     const int acc_sf = (num_sf > den_sf) ? num_sf : den_sf;
@@ -17,21 +19,26 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
     const int den_shift = acc_sf - den_sf;
     const int64_t round_add = (int64_t)1 << (acc_sf - 1);
 
+    // store coefficients as local variables
     const int16_t x0 = filter->x[0];
     const int16_t x1 = filter->x[1];
     const int16_t x2 = filter->x[2];
     const int16_t y1 = filter->y[1];
     const int16_t y2 = filter->y[2];
-
+    // use a separate restrict pointer for the data buffer within the struct
+    // guarantees to the compiler that input->input_data_buffer does not alias
+    // with output
+    // goal of above is to get the compiler to keep coefficienst and accumulator
+    // in registers
     const int16_t *__restrict in = input->input_data_buffer;
     const int len = (int)input_length;
-
+    // initialize the filter
     if (len > 0)
     {
         int64_t num_acc = (int64_t)x0 * in[0];
         int64_t total = num_acc << num_shift;
         total = (total + round_add) >> acc_sf;
-        output[0] = saturate_int16(total);
+        output[0] = saturate(total);
     }
     if (len > 1)
     {
@@ -39,7 +46,7 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
         int64_t den_acc = (int64_t)y1 * output[0];
         int64_t total = (num_acc << num_shift) - (den_acc << den_shift);
         total = (total + round_add) >> acc_sf;
-        output[1] = saturate_int16(total);
+        output[1] = saturate(total);
     }
 
     for (int i = 2; i < len; i++)
@@ -50,7 +57,7 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
             (int64_t)y1 * output[i - 1] + (int64_t)y2 * output[i - 2];
         int64_t total = (num_acc << num_shift) - (den_acc << den_shift);
         total = (total + round_add) >> acc_sf;
-        output[i] = saturate_int16(total);
+        output[i] = saturate(total);
     }
 }
 
@@ -90,7 +97,7 @@ void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
             (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
         // round to nearest on the way back down to the input scale
         total = (total + (1 << (acc_sf - 1))) >> acc_sf;
-        output[i] = saturate_int16(total);
+        output[i] = saturate(total);
     }
 }
 

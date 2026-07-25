@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static inline int16_t saturate_int16(int64_t x)
+static inline int16_t saturate(int64_t x)
 {
     if (x > INT16_MAX)
     {

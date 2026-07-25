@@ -18,8 +18,7 @@ void fir_filter_neon_helper(const input_data_t *input, int16_t *output,
     memcpy(&history_buf[hist], input->input_data_buffer,
            input_length * sizeof(int16_t));
 
-    fir_filter_neon(history_buf, output, input_length, coeffs, scale_factor,
-                    coeffs_length);
+    fir_filter_neon(history_buf, output, input_length, coeffs, coeffs_length);
 }
 // scale factor applied must be 15
 void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
@@ -72,7 +71,7 @@ void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
             acc += (int32_t)input_with_history[n + (coeffs_length - 1) - k] *
                    coeffs[k];
         }
-        int32_t shifted = (acc + (1 << (scale_factor - 1))) >> scale_factor;
+        int32_t shifted = (acc + (1 << (15 - 1))) >> 15;
         // saturate
         if (shifted > 32767)
             shifted = 32767;
@@ -99,7 +98,7 @@ void fir_filter(const input_data_t *input, int16_t *output,
         }
         int32_t temp = (int16_t)(acc >> scale_factor);
 
-        output[n] = saturate_int16(temp);
+        output[n] = saturate(temp);
     }
 }
 

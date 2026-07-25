@@ -37,7 +37,7 @@ int load_coefficients_fixed(const char *filename, filter_type type,
         }
         filter->x_coeffs = i;
         filter->num_scale_factor_exp =
-            convert_to_fixed(temp, filter->x, filter->x_coeffs, pow(2, 15));
+            convert_to_fixed(temp, filter->x, filter->x_coeffs, pow(2, 11));
         fclose(input);
         return i;
     }
