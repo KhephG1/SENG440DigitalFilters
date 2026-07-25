@@ -7,7 +7,8 @@
 #define MAXLINE (50)
 // takes a filter struct as input and populates the size members with the number
 // of numerator and denominator coefficients read
-int load_coefficients(const char *filename, filter_type type, filter_t *filter)
+int load_coefficients_fixed(const char *filename, filter_type type,
+                            filter_t *filter)
 {
     FILE *input = fopen(filename, "r");
     float temp[MAX_COEFFS] = {};
@@ -36,7 +37,7 @@ int load_coefficients(const char *filename, filter_type type, filter_t *filter)
         }
         filter->x_coeffs = i;
         filter->num_scale_factor_exp =
-            convert_to_fixed(temp, filter->x, filter->x_coeffs);
+            convert_to_fixed(temp, filter->x, filter->x_coeffs, pow(2, 11));
         fclose(input);
         return i;
     }
@@ -50,7 +51,7 @@ int load_coefficients(const char *filename, filter_type type, filter_t *filter)
         }
         filter->x_coeffs = i;
         filter->num_scale_factor_exp =
-            convert_to_fixed(temp, filter->x, filter->x_coeffs);
+            convert_to_fixed(temp, filter->x, filter->x_coeffs, pow(2, 15));
         char *result =
             fgets(label, MAXLINE, input);  // get rid of the "den" line
         while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS && result)
@@ -61,7 +62,67 @@ int load_coefficients(const char *filename, filter_type type, filter_t *filter)
         }
         filter->y_coeffs = j;
         filter->den_scale_factor_exp =
-            convert_to_fixed(temp, filter->y, filter->y_coeffs);
+            convert_to_fixed(temp, filter->y, filter->y_coeffs, pow(2, 15));
+        fclose(input);
+        return i + j;
+    }
+    else
+    {
+        // invalid input
+        return -1;
+    }
+}
+
+int load_coefficients_float(const char *filename, filter_type type,
+                            float *filter_x, float *filter_y, int *coeffs_x,
+                            int *coeffs_y)
+{
+    FILE *input = fopen(filename, "r");
+    if (!input)
+    {
+        return -1;  // invalid file path
+    }
+    // loop counters for feedforward and feedback coefficients
+    int i = 0;
+    int j = 0;
+    char label[MAXLINE];
+    char *result = fgets(label, MAXLINE, input);
+    if (!result || strcmp(label, "num\n") != 0)
+    {
+        return -1;  // invalid filter file format
+    }
+    // read the numerator coeffs
+    if (type == FIR)
+    {
+
+        float coef = 0.f;
+        while (fscanf(input, "%f", &coef) == 1 && i < MAX_COEFFS)
+        {
+            filter_x[i] = coef;
+            i++;
+        }
+        *coeffs_x = i;
+        fclose(input);
+        return i;
+    }
+    else if (type == IIR)
+    {
+        float coef = 0.f;
+        while (fscanf(input, "%f", &coef) == 1 && i < MAX_COEFFS)
+        {
+            filter_x[i] = coef;
+            i++;
+        }
+        *coeffs_x = i;
+        char *result =
+            fgets(label, MAXLINE, input);  // get rid of the "den" line
+        while (fscanf(input, "%f", &coef) == 1 && j < MAX_COEFFS && result)
+        {
+            // apply scale factor to coeffs (C = round (c * SF))
+            filter_y[j] = coef;
+            j++;
+        }
+        *coeffs_y = j;
         fclose(input);
         return i + j;
     }
