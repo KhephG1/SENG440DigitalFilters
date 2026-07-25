@@ -90,7 +90,7 @@ void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
             (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
         // round to nearest on the way back down to the input scale
         total = (total + (1 << (acc_sf - 1))) >> acc_sf;
-        output[i] = saturate_int16(total);
+        output[i] = saturate(total);
     }
 }
 

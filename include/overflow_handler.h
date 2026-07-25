@@ -4,20 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static inline int16_t saturate_int16(int64_t x)
-{
-    if (x > INT16_MAX)
-    {
-        return INT16_MAX;
-    }
-    else if (x < INT16_MIN)
-    {
-        return INT16_MIN;
-    }
-    else
-    {
-        return (int16_t)x;
-    }
-}
+int16_t saturate(int64_t value);
+
+int get_overflow_count();
+
+void reset_overflow_count();
 
 #endif

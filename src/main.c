@@ -13,14 +13,12 @@ int y_coeffs = 0;
 ;
 int main()
 {
-    // test_fir_filter("tools/test_output/filter_output_1.txt", &input,
-    //                 &FIR_filter);
-    // test_fir_filter_float("tools/test_output/filter_output_2", input_data,
-    // filter_x, &x_coeffs);
-    // test_iir_filter_float("tools/test_output/filter_output_3.txt",
-    // input_data, filter_x, filter_y, &x_coeffs, &y_coeffs);
-    test_iir_filter_fixed("tools/test_output/filter_output_4.txt", &input,
-                          &IIR_filter);
-    // test_iir_biquad_fixed("tools/test_output/filter_output_5.txt", &input);
+    test_fir_filter("test_output/fir_filter_output.txt", &input, &FIR_filter);
+    printf("FIR Filter Overflows: %d\n", get_overflow_count());
+    reset_overflow_count();
+    // test_parser("test_output/output.txt", input_samples, &IIR_filter);
+    test_iir_filter("test_output/iir_filter_output.txt", &input, &IIR_filter);
+    printf("IIR Filter Overflows: %d\n", get_overflow_count());
+
     return 0;
 }
