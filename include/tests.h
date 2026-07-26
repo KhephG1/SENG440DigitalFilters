@@ -15,6 +15,8 @@ void test_iir_biquad_fixed_unrolled(char *outputfile, input_data_t *input_data);
 
 void test_fir_filter(char *outputfile, input_data_t *input_data,
                      filter_t *filter);
+void test_fir_filter_saturation(char *outputfile, input_data_t *input_data,
+                     filter_t *filter);
 void test_fir_filter_float(char *outputfile, float *input_data, float *filter_x,
                            int *coeffs_x);
 void test_fir_filter_neon(char *outputfile, input_data_t *input_data,
