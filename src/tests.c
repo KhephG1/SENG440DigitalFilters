@@ -3,6 +3,7 @@
 #include "fixed_point_math.h"
 #include "iir_filter_core.h"
 #include "performance_profiler.h"
+#include "overflow_handler.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -26,6 +27,26 @@ void test_parser(char *output, input_data_t *input_data, filter_t *filter)
         fprintf(file, "coeffs[%d]: %d\n", i, filter->x[i]);
     }
 }
+
+void test_overflow_handler(void){
+    printf("\n=== Overflow Handler Test ===\n");
+
+    int16_t normal_value = saturate(12345);
+    int16_t max_value = saturate(40000);
+    int16_t min_value = saturate(-40000);
+    int16_t edge_max = saturate(32767);
+    int16_t edge_min = saturate(-32768);
+
+    printf("saturate(12345)  = %d, expected 12345\n", normal_value);
+    printf("saturate(40000)  = %d, expected 32767\n", max_value);
+    printf("saturate(-40000) = %d, expected -32768\n", min_value);
+    printf("saturate(32767)  = %d, expected 32767\n", edge_max);
+    printf("saturate(-32768) = %d, expected -32768\n", edge_min);
+
+    printf("overflow count = %d, expected 2\n", get_overflow_count());
+    reset_overflow_count();
+}
+
 void test_fixed_point_math(float *input, uint16_t size)
 {
     if (size == 0)

@@ -6,6 +6,8 @@
 
 void test_parser(char *output, input_data_t *input_data, filter_t *filter);
 
+void test_overflow_handler(void);
+
 void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
                            filter_t *filter);
 
