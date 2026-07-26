@@ -2,9 +2,12 @@
 #include "coefficient_loader.h"
 #include "input_data_loader.h"
 #include "overflow_handler.h"
+#include "mac_unit.h"
+
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
+
 void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
                                            int16_t *__restrict output,
                                            uint32_t input_length,
@@ -97,6 +100,44 @@ void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
             (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
         // round to nearest on the way back down to the input scale
         total = (total + (1 << (acc_sf - 1))) >> acc_sf;
+        output[i] = saturate(total);
+    }
+}
+
+void iir_filter_fixed_point_mac(const input_data_t *input, int16_t *output,
+                                uint32_t input_length, filter_t *filter)
+{
+    const int num_sf = filter->num_scale_factor_exp;
+    const int den_sf = filter->den_scale_factor_exp;
+    const int acc_sf = (num_sf > den_sf) ? num_sf : den_sf;
+
+    for (int i = 0; i < (int)input_length; i++)
+    {
+        int64_t num_acc = 0;
+
+        for (int j = 0; j < filter->x_coeffs; j++)
+        {
+            if (i >= j)
+            {
+                num_acc = mac_inline(num_acc, filter->x[j], input->input_data_buffer[i - j]);
+            }
+        }
+
+        int64_t den_acc = 0;
+
+        for (int j = 1; j < filter->y_coeffs; j++)
+        {
+            if (i >= j)
+            {
+                den_acc = mac_inline(den_acc, filter->y[j], output[i - j]);
+            }
+        }
+
+        int64_t total =
+            (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
+
+        total = (total + ((int64_t)1 << (acc_sf - 1))) >> acc_sf;
+
         output[i] = saturate(total);
     }
 }

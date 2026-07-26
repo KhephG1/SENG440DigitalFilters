@@ -4,6 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-int mac_unit(int acc, int a, int b);
+int64_t mac(int64_t acc, int16_t a, int16_t b);
 
 #endif

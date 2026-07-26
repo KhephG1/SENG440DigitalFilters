@@ -166,6 +166,39 @@ void test_iir_biquad_fixed(char *outputfile, input_data_t *input_data)
     fclose(file);
 }
 
+void test_iir_filter_fixed_mac(char *outputfile, input_data_t *input_data,
+                           filter_t *filter)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+    load_coefficients_fixed("tools/filter_coefficients/IIR_filter_coeffs.txt",
+                            IIR, filter);
+    printf("input data sf: %d, filter sf: num %d den %d\n",
+           input_data->scale_factor_exp, filter->num_scale_factor_exp,
+           filter->den_scale_factor_exp);
+    for (int i = 0; i < filter->x_coeffs; i++)
+    {
+        printf("filter x: %d\n", filter->x[i]);
+    }
+    printf("ycoeffs: %d\n", filter->y_coeffs);
+    for (int i = 0; i < filter->y_coeffs; i++)
+    {
+        printf("filter y: %d %d\n", i, filter->y[i]);
+    }
+
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    iir_filter_fixed_point_mac(input_data, filter_output, data_samples, filter);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", (int)filter_output[i]);
+    }
+    fclose(file);
+}
+
 void test_iir_biquad_fixed_unrolled(char *outputfile, input_data_t *input_data)
 {
     int data_samples = load_accelerometer_data_fixed(
@@ -243,6 +276,32 @@ void test_fir_filter(char *outputfile, input_data_t *input_data,
     int16_t filter_output[MAX_SAMPLES] = {};
     profiler_start();
     fir_filter(input_data, filter_output, data_samples, filter->x,
+               filter->num_scale_factor_exp, filter->x_coeffs);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    FILE *file = fopen(outputfile, "w");
+
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", filter_output[i]);
+    }
+    fclose(file);
+}
+
+void test_fir_filter_mac(char *outputfile, input_data_t *input_data,
+                     filter_t *filter)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+
+    load_coefficients_fixed("tools/filter_coefficients/FIR_filter_coeffs.txt",
+                            FIR, filter);
+
+    printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
+           filter->num_scale_factor_exp);
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    fir_filter_mac(input_data, filter_output, data_samples, filter->x,
                filter->num_scale_factor_exp, filter->x_coeffs);
     profiler_stop();
     printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
