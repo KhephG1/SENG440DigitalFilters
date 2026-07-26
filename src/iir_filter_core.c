@@ -119,7 +119,7 @@ void iir_filter_fixed_point_mac(const input_data_t *input, int16_t *output,
         {
             if (i >= j)
             {
-                num_acc = mac_inline(num_acc, filter->x[j], input->input_data_buffer[i - j]);
+                num_acc = mac(num_acc, filter->x[j], input->input_data_buffer[i - j]);
             }
         }
 
@@ -129,7 +129,7 @@ void iir_filter_fixed_point_mac(const input_data_t *input, int16_t *output,
         {
             if (i >= j)
             {
-                den_acc = mac_inline(den_acc, filter->y[j], output[i - j]);
+                den_acc = mac(den_acc, filter->y[j], output[i - j]);
             }
         }
 
