@@ -35,6 +35,8 @@ int main()
     // test_fir_filter_neon("tools/test_output/test_output_7.txt", &input,
     // &FIR_filter);
     test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
+    // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
+    test_iir_biquad_pipelined("tools/test_output/test_output_9.txt", &input);
 
     return 0;
 }
