@@ -1,97 +1,113 @@
 import argparse
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Scale factors used by the C code
-OUTPUT_SF = 7  # IIR output is Q15 
+OUTPUT_SF = 7  # IIR output is Q15
 FS = 25600     # sampling rate in Hz
-
 INT16_MIN = -32768
 INT16_MAX = 32767
+
 
 def load_fixed_point(path, scale_factor):
     """Read one integer per line; return (float samples, raw int samples)."""
     raw = np.loadtxt(path)
     return raw / float(1 << scale_factor), raw
 
+
+def plot_time(ax, t_ms, samples, color, label, title, duration_ms):
+    ax.plot(t_ms, samples, color=color, linewidth=0.8, label=label)
+    ax.set_title(title)
+    ax.set_xlabel("Time (ms)")
+    ax.set_ylabel("Amplitude")
+    ax.set_xlim(0, duration_ms)
+    ax.grid(True)
+    ax.legend(loc="upper right")
+
+
+def plot_fft(ax, samples, fs, color, label, title):
+    n = len(samples)
+    fft_output = np.fft.rfft(samples)
+    frequencies = np.fft.rfftfreq(n, d=1.0 / fs)
+    magnitudes = (np.abs(fft_output) / n) * 2.0
+    if len(magnitudes) > 0:
+        magnitudes[0] /= 2.0  # DC bin is not doubled
+    ax.plot(frequencies, magnitudes, color=color, linewidth=1.0, label=label)
+    ax.set_title(title)
+    ax.set_xlabel("Frequency (Hz)")
+    ax.set_ylabel("Magnitude")
+    ax.set_xlim(0, fs / 2)
+    ax.grid(True)
+    ax.legend(loc="upper right")
+
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("output_file", help="filter output file (one int per line)")
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("output_file",
+                        help="filter output file (one int per line)")
     parser.add_argument("--sf", type=int, default=OUTPUT_SF,
-                        help=f"output scale factor, value >> is 2^SF (default {OUTPUT_SF})")
+                        help=f"output scale factor, value >> is 2^SF "
+                             f"(default {OUTPUT_SF})")
     parser.add_argument("--fs", type=float, default=FS,
                         help=f"sampling rate in Hz (default {FS})")
     parser.add_argument("--input", metavar="CSV",
-                        help="optional raw input file to overlay (float, one per line)")
+                        help="raw input file to plot in the top row "
+                             "(float, one per line)")
     parser.add_argument("--save", metavar="PNG",
                         help="save the plot to a file instead of showing it")
     args = parser.parse_args()
 
-    # 1. Load data and convert to milliseconds
+    # 1. Load output data and build a time axis in milliseconds
     y, y_raw = load_fixed_point(args.output_file, args.sf)
     t_ms = (np.arange(len(y)) / args.fs) * 1000.0
+    duration_ms = t_ms[-1] if len(t_ms) else 0.0
 
-    # 2. Slice the arrays to strictly keep the first 100 ms of data
-    time_mask = t_ms <= 100000.0
-    t_ms_window = t_ms[time_mask]
-    y_window = y[time_mask]
-    y_raw_window = y_raw[time_mask]
-
-    # --- Setup a 2-Row Plot Configuration ---
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(11, 7), sharex=False)
+    # --- 2x2 quadrant layout ---
+    # Row 1: input  (time domain | FFT)
+    # Row 2: output (time domain | FFT)
+    fig, axes = plt.subplots(2, 2, figsize=(13, 8))
+    (ax_in_t, ax_in_f), (ax_out_t, ax_out_f) = axes
 
     # ==========================================
-    # SUBPLOT 1: TIME DOMAIN WAVEFORM (0 to 100 ms)
+    # TOP ROW: INPUT (time domain + FFT)
     # ==========================================
     if args.input:
-        x = np.loadtxt(args.input)
-        x_window = x[:len(y)][time_mask] # Slice matching input window
-        ax1.plot(t_ms_window, x_window, color="0.7", linewidth=0.8, label="input")
+        x = np.loadtxt(args.input)[:len(y)]  # match output length
+        plot_time(ax_in_t, t_ms[:len(x)], x, "0.4", "input",
+                  f"Input Time Domain ({len(x)} samples)",
+                  duration_ms)
+        plot_fft(ax_in_f, x, args.fs, "0.4", "input spectrum",
+                 "Input Spectrum (FFT of full signal)")
+    else:
+        for ax in (ax_in_t, ax_in_f):
+            ax.text(0.5, 0.5, "no --input file provided",
+                    ha="center", va="center", transform=ax.transAxes,
+                    color="0.5")
+            ax.set_xticks([])
+            ax.set_yticks([])
 
-    ax1.plot(t_ms_window, y_window, "b", linewidth=0.8, label="filter output")
-    
-    saturated = int(np.sum((y_raw_window <= INT16_MIN) | (y_raw_window >= INT16_MAX)))
-    title = f"Filter Output Time Domain (First 100 ms, {len(y_window)} samples)"
+    # ==========================================
+    # BOTTOM ROW: OUTPUT (time domain + FFT)
+    # ==========================================
+    saturated = int(np.sum((y_raw <= INT16_MIN) | (y_raw >= INT16_MAX)))
+    out_title = f"Filter Output Time Domain ({len(y)} samples)"
     if saturated:
-        title += f"  —  WARNING: {saturated} windowed samples at int16 rail"
+        out_title += f"\nWARNING: {saturated} samples at int16 rail"
+    plot_time(ax_out_t, t_ms, y, "b", "filter output", out_title,
+              duration_ms)
+    plot_fft(ax_out_f, y, args.fs, "r", "output spectrum",
+             "Output Spectrum (FFT of full signal)")
 
-    ax1.set_title(title)
-    ax1.set_xlabel("Time (ms)")
-    ax1.set_ylabel("Amplitude")
-    ax1.set_xlim(0, 10000.0) # Hard-lock viewing frame to 0-100 ms
-    ax1.grid(True)
-    ax1.legend()
-
-    # ==========================================
-    # SUBPLOT 2: FOURIER TRANSFORM (OF THE 100 ms WINDOW)
-    # ==========================================
-    n_samples = len(y_window)
-    
-    # Calculate Fast Fourier Transform ONLY for the visible 100ms window
-    fft_output = np.fft.rfft(y_window)
-    frequencies = np.fft.rfftfreq(n_samples, d=1.0/args.fs)
-    
-    magnitudes = (np.abs(fft_output) / n_samples) * 2.0
-    if len(magnitudes) > 0:
-        magnitudes[0] /= 2.0  
-
-    # Plot the frequency magnitude spectrum
-    ax2.plot(frequencies, magnitudes, "r", linewidth=1.0, label="FFT Spectrum")
-    
-    ax2.set_title(f"Frequency Spectrum (Fourier Transform of First 100 ms)")
-    ax2.set_xlabel("Frequency (Hz)")
-    ax2.set_ylabel("Magnitude")
-    ax2.grid(True)
-    ax2.set_xlim(0, args.fs / 2) 
-    
     plt.tight_layout()
-
     if args.save:
         plt.savefig(args.save, dpi=120)
         print(f"saved plot to {args.save}")
     else:
         plt.show()
+
 
 if __name__ == "__main__":
     main()

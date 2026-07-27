@@ -19,4 +19,6 @@ void test_fir_filter_float(char *outputfile, float *input_data, float *filter_x,
                            int *coeffs_x);
 void test_fir_filter_neon(char *outputfile, input_data_t *input_data,
                           filter_t *filter);
+
+void test_iir_biquad_pipelined(char *outputfile, input_data_t *input_data);
 #endif

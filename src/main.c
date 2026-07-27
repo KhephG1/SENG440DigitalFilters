@@ -24,16 +24,18 @@ int main()
     // test_fir_filter_float("tools/test_output/filter_output_2", input_data,
     // filter_x, &x_coeffs);
 
-    printf("FIR Filter Overflows: %d\n", get_overflow_count());
-    reset_overflow_count();
-    test_iir_filter_fixed("test_output/iir_filter_output.txt", &input,
-                          &IIR_filter);
-    printf("IIR Filter Overflows: %d\n", get_overflow_count());
+    // printf("FIR Filter Overflows: %d\n", get_overflow_count());
+    // reset_overflow_count();
+    // test_iir_filter_fixed("test_output/iir_filter_output.txt", &input,
+    //                       &IIR_filter);
+    // printf("IIR Filter Overflows: %d\n", get_overflow_count());
     // test_iir_biquad_fixed("tools/test_output/filter_output_5.txt", &input);
     // test_iir_biquad_fixed_unrolled("tools/test_output/test_output_6.txt",
-    //                              &input);
+    //                                &input);
     // test_fir_filter_neon("tools/test_output/test_output_7.txt", &input,
     // &FIR_filter);
+    // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
+    test_iir_biquad_pipelined("tools/test_output/test_output_9.txt", &input);
 
     return 0;
 }
