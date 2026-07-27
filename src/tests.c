@@ -3,8 +3,10 @@
 #include "fixed_point_math.h"
 #include "iir_filter_core.h"
 #include "performance_profiler.h"
+#include "overflow_handler.h"
 #include <stdio.h>
 #include <string.h>
+
 #define MAX_TEST_SIZE (50)
 void test_parser(char *output, input_data_t *input_data, filter_t *filter)
 {
@@ -25,6 +27,26 @@ void test_parser(char *output, input_data_t *input_data, filter_t *filter)
         fprintf(file, "coeffs[%d]: %d\n", i, filter->x[i]);
     }
 }
+
+void test_overflow_handler(void){
+    printf("\n=== Overflow Handler Test ===\n");
+
+    int16_t normal_value = saturate(12345);
+    int16_t max_value = saturate(40000);
+    int16_t min_value = saturate(-40000);
+    int16_t edge_max = saturate(32767);
+    int16_t edge_min = saturate(-32768);
+
+    printf("saturate(12345)  = %d, expected 12345\n", normal_value);
+    printf("saturate(40000)  = %d, expected 32767\n", max_value);
+    printf("saturate(-40000) = %d, expected -32768\n", min_value);
+    printf("saturate(32767)  = %d, expected 32767\n", edge_max);
+    printf("saturate(-32768) = %d, expected -32768\n", edge_min);
+
+    printf("overflow count = %d, expected 2\n", get_overflow_count());
+    reset_overflow_count();
+}
+
 void test_fixed_point_math(float *input, uint16_t size)
 {
     if (size == 0)
@@ -305,6 +327,32 @@ void test_fir_filter(char *outputfile, input_data_t *input_data,
     int16_t filter_output[MAX_SAMPLES] = {};
     profiler_start();
     fir_filter(input_data, filter_output, data_samples, filter->x,
+               filter->num_scale_factor_exp, filter->x_coeffs);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    FILE *file = fopen(outputfile, "w");
+
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", filter_output[i]);
+    }
+    fclose(file);
+}
+
+void test_fir_filter_saturation(char *outputfile, input_data_t *input_data,
+                     filter_t *filter)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+
+    load_coefficients_fixed("tools/filter_coefficients/FIR_filter_coeffs.txt",
+                            FIR, filter);
+
+    printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
+           filter->num_scale_factor_exp);
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    fir_filter_saturation(input_data, filter_output, data_samples, filter->x,
                filter->num_scale_factor_exp, filter->x_coeffs);
     profiler_stop();
     printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
