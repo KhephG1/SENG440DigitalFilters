@@ -8,6 +8,79 @@
 #include <stdint.h>
 #include <stdio.h>
 
+// https://software-dl.ti.com/codegen/docs/c7000/optimization_guide/5_understand_opt/compopt_under_pipelining.html
+// Software pipelining: ARM is dual issue. Want to keep both issue slots busy.
+// Idea is to ocupy one with loading the next iteration while the other executes
+// the current iteration
+
+void iir_filter_pipelined(const input_data_t *__restrict input,
+                          int16_t *__restrict output, uint32_t input_length,
+                          filter_t *__restrict filter)
+{
+
+    const int num_sf = filter->num_scale_factor_exp;
+    const int den_sf = filter->den_scale_factor_exp;
+    const int num_add = 1 << (num_sf - 1);
+    const int den_add = 1 << (den_sf - 1);
+    const int16_t *__restrict in = input->input_data_buffer;
+    int32_t num_acc = 0;
+    int32_t den_acc = 0;
+    // 1. initialize the filter:
+    if (input_length > 0)
+    {
+        num_acc = (((int32_t)filter->x[0] * in[0]) + num_add) >> num_sf;
+        output[0] = saturate(num_acc);
+    }
+    if (input_length > 1)
+    {
+        num_acc = (((int32_t)filter->x[0] * in[1] + num_add) >> num_sf) +
+                  (((int32_t)filter->x[1] * in[0] + num_add) >> num_sf);
+        den_acc = ((int32_t)filter->y[1] * output[0] + den_add) >> den_sf;
+        output[1] = saturate(num_acc - den_acc);
+    }
+    // loop prologue
+    //  2. preload the numerator coefficients into registers
+    const int16_t x0 = filter->x[0];
+    const int16_t x1 = filter->x[1];
+    const int16_t x2 = filter->x[2];
+    // 3. compute the feedforward path of the first iteration
+    int32_t temp1 = ((int32_t)x0 * in[2] + num_add) >> num_sf;
+    int32_t temp2 = ((int32_t)x1 * in[1] + num_add) >> num_sf;
+    int32_t temp3 = ((int32_t)x2 * in[0] + num_add) >> num_sf;
+    int32_t temp4 = 0;
+    int32_t temp5 = 0;
+    num_acc = temp1 + temp2 + temp3;
+    const int16_t y1 = filter->y[1];
+    const int16_t y2 = filter->y[2];
+    for (int i = 2; i < input_length - 1; i++)
+    {
+        // compute the feeback path
+        temp4 = ((int32_t)y1 * output[i - 1] + den_add) >> den_sf;
+        temp5 = ((int32_t)y2 * output[i - 2] + den_add) >> den_sf;
+        den_acc = temp4 + temp5;
+        output[i] = saturate(num_acc - den_acc);
+        // compute numerator for next iteration
+        temp1 = ((int32_t)x0 * in[i + 1] + num_add) >> num_sf;
+        temp2 = ((int32_t)x1 * in[i] + num_add) >> num_sf;
+        temp3 = ((int32_t)x2 * in[i - 1] + num_add) >> num_sf;
+        num_acc = temp1 + temp2 + temp3;
+    }
+    // loop epilogue
+    temp4 = ((int32_t)y1 * output[input_length - 2] + den_add) >> den_sf;
+    temp5 = ((int32_t)y2 * output[input_length - 3] + den_add) >> den_sf;
+    den_acc = temp4 + temp5;
+    output[input_length - 1] = saturate(num_acc - den_acc);
+}
+// https://en.cppreference.com/c/language/restrict
+// recall: ARM32 has 16 general purpose registers. Main drawback of unrolling is
+// risk of increased pressure on the register file main benefits:
+// 1. reduce branch overhead (less cmp + b instructions)
+// 2. increase size of basic block (number of sequential instructions without a
+// branch). This is good because cortex-a7 only has basic branch predictor. more
+// branches will increase mispredictions and branch penalties.
+// 3. ARM is horizontal (can make use of ILP that comes with larger basic block
+// since less control dependencies) but Not as beneficial as on a machine with
+// out of order execution (interleaving not possible on arm)
 void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
                                            int16_t *__restrict output,
                                            uint32_t input_length,
