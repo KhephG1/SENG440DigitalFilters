@@ -38,11 +38,11 @@ int main()
     // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
     // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
     // test_iir_biquad_pipelined("tools/test_output/test_output_9.txt", &input);
-
     // test_iir_filter_fixed_ssat("tools/test_output/test_output_10.txt",
     // &input, &IIR_filter);
-    test_ssat_overflow();
-    test_overflow();
-
+    // test_ssat_overflow();
+    // test_overflow();
+    test_iir_filter_fixed_mac("tools/test_output/test_output_11.txt", &input,
+                              &IIR_filter);
     return 0;
 }

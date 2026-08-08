@@ -4,7 +4,7 @@ CC = gcc
 # TOOLCHAIN = $(HOME)/toolchains/armv5-eabi--glibc--stable-2025.08-1
 # CC = $(TOOLCHAIN)/bin/arm-buildroot-linux-gnueabi-gcc
 #CFLAGS = -g -Iinclude -Wall -O2 -MMD -MP -mtune=cortex-a7 -mfloat-abi=soft
-CFLAGS = -g -Iinclude -Wall -MMD -MP -mfpu=neon
+CFLAGS = -g -Iinclude -Wall -MMD -MP -mfpu=neon -mtune=cortex-a7 -O3
 #CFLAGS = -g -Iinclude -Wall  -MMD -MP 
 #linker flags uncomment for cross compile with soft floating point (wont run locally if uncommented)
 # LDFLAGS = -static -mfloat-abi=soft

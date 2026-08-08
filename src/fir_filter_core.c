@@ -1,6 +1,6 @@
 #include "fir_filter_core.h"
-#include "overflow_handler.h"
 #include "mac_unit.h"
+#include "overflow_handler.h"
 
 #include <arm_neon.h>
 #include <string.h>
@@ -63,7 +63,6 @@ void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
         vst1q_s16(&output[n], out);
     }
 
-    // Scalar tail for the last <8 samples
     for (; n < input_length; n++)
     {
         int32_t acc = 0;
@@ -73,12 +72,7 @@ void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
                    coeffs[k];
         }
         int32_t shifted = (acc + (1 << (15 - 1))) >> 15;
-        // saturate
-        if (shifted > 32767)
-            shifted = 32767;
-        if (shifted < -32768)
-            shifted = -32768;
-        output[n] = (int16_t)shifted;
+        output[n] = saturate_ssat(shifted);
     }
 }
 
@@ -102,8 +96,8 @@ void fir_filter(const input_data_t *input, int16_t *output,
 }
 
 void fir_filter_ssat(const input_data_t *input, int16_t *output,
-                uint32_t input_length, const int16_t *coeffs,
-                int16_t scale_factor, uint32_t coeffs_length)
+                     uint32_t input_length, const int16_t *coeffs,
+                     int16_t scale_factor, uint32_t coeffs_length)
 {
     for (uint32_t n = 0; n < input_length; n++)
     {
@@ -123,8 +117,8 @@ void fir_filter_ssat(const input_data_t *input, int16_t *output,
 }
 
 void fir_filter_saturation(const input_data_t *input, int16_t *output,
-                uint32_t input_length, const int16_t *coeffs,
-                int16_t scale_factor, uint32_t coeffs_length)
+                           uint32_t input_length, const int16_t *coeffs,
+                           int16_t scale_factor, uint32_t coeffs_length)
 {
     for (uint32_t n = 0; n < input_length; n++)
     {
@@ -161,7 +155,6 @@ void fir_filter_mac(const input_data_t *input, int16_t *output,
         output[n] = saturate(acc >> scale_factor);
     }
 }
-
 
 void fir_filter_naive(const float *input, float *output, uint32_t input_length,
                       float *filter_x, int *coeffsx)

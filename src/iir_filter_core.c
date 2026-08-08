@@ -30,7 +30,7 @@ void iir_filter_neon(const input_data_t *__restrict input,
     if (input_length > 0)
     {
         int32_t temp1 = ((int32_t)filter->x[0] * in[0] + (1 << 21)) >> 22;
-        output[0] = saturate(temp1);
+        output[0] = saturate_ssat(temp1);
     }
     if (input_length > 1)
     {
@@ -38,7 +38,7 @@ void iir_filter_neon(const input_data_t *__restrict input,
         int32_t temp2 = ((int32_t)filter->x[1] * in[0] + (1 << 21)) >> 22;
         int32_t temp3 = ((int32_t)filter->y[1] * output[0] + (1 << 13)) >> 14;
         int32_t total = temp1 + temp2 - temp3;
-        output[1] = saturate(total);
+        output[1] = saturate_ssat(total);
     }
     // load the coefficients into neon registers before the loop
     // we only have 3 numerator and two denominator coefficients so pad the
@@ -77,7 +77,7 @@ void iir_filter_neon(const input_data_t *__restrict input,
         int32_t den_acc = vget_lane_s32(lo, 0);
         // subract the accumulated numerator / denominator factors and apply
         // saturation
-        output[i] = saturate(num_acc - den_acc);
+        output[i] = saturate_ssat(num_acc - den_acc);
     }
 }
 
@@ -102,14 +102,14 @@ void iir_filter_pipelined(const input_data_t *__restrict input,
     if (input_length > 0)
     {
         num_acc = (((int32_t)filter->x[0] * in[0]) + num_add) >> num_sf;
-        output[0] = saturate(num_acc);
+        output[0] = saturate_ssat(num_acc);
     }
     if (input_length > 1)
     {
         num_acc = (((int32_t)filter->x[0] * in[1] + num_add) >> num_sf) +
                   (((int32_t)filter->x[1] * in[0] + num_add) >> num_sf);
         den_acc = ((int32_t)filter->y[1] * output[0] + den_add) >> den_sf;
-        output[1] = saturate(num_acc - den_acc);
+        output[1] = saturate_ssat(num_acc - den_acc);
     }
     // loop prologue
     //  2. preload the numerator coefficients into registers
@@ -142,7 +142,7 @@ void iir_filter_pipelined(const input_data_t *__restrict input,
     temp4 = ((int32_t)y1 * output[input_length - 2] + den_add) >> den_sf;
     temp5 = ((int32_t)y2 * output[input_length - 3] + den_add) >> den_sf;
     den_acc = temp4 + temp5;
-    output[input_length - 1] = saturate(num_acc - den_acc);
+    output[input_length - 1] = saturate_ssat(num_acc - den_acc);
 }
 // https://en.cppreference.com/c/language/restrict
 // recall: ARM32 has 16 general purpose registers. Main drawback of unrolling is
@@ -172,7 +172,7 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
     if (input_length > 0)
     {
         int32_t num_acc = (((int32_t)x0 * in[0]) + num_round) >> num_sf;
-        output[0] = saturate(num_acc);
+        output[0] = saturate_ssat(num_acc);
     }
     if (input_length > 1)
     {
@@ -180,17 +180,18 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
                           ((((int32_t)x1 * in[0]) + num_round) >> num_sf);
         int32_t den_acc = (((int32_t)y1 * output[0]) + den_round) >> den_sf;
         int32_t total = num_acc - den_acc;
-        output[1] = saturate(total);
+        output[1] = saturate_ssat(total);
     }
     for (int i = 2; i < input_length; i++)
     {
         int32_t num_acc = ((((int32_t)x0 * in[i]) + num_round) >> num_sf) +
                           ((((int32_t)x1 * in[i - 1]) + num_round) >> num_sf) +
                           ((((int32_t)x2 * in[i - 2]) + num_round) >> num_sf);
-        int32_t den_acc = ((((int32_t)y1 * output[i - 1]) + den_round) >> den_sf) +
-                          ((((int32_t)y2 * output[i - 2]) + den_round) >> den_sf);
+        int32_t den_acc =
+            ((((int32_t)y1 * output[i - 1]) + den_round) >> den_sf) +
+            ((((int32_t)y2 * output[i - 2]) + den_round) >> den_sf);
         int32_t total = num_acc - den_acc;
-        output[i] = saturate(total);
+        output[i] = saturate_ssat(total);
     }
 }
 
@@ -230,7 +231,7 @@ void iir_filter_fixed_point(const input_data_t *input, int16_t *output,
             (num_acc << (acc_sf - num_sf)) - (den_acc << (acc_sf - den_sf));
         // round to nearest on the way back down to the input scale
         total = (total + (1 << (acc_sf - 1))) >> acc_sf;
-        output[i] = saturate(total);
+        output[i] = saturate_ssat(total);
     }
 }
 
@@ -269,12 +270,12 @@ void iir_filter_fixed_point_mac(const input_data_t *input, int16_t *output,
 
         total = (total + ((int64_t)1 << (acc_sf - 1))) >> acc_sf;
 
-        output[i] = saturate(total);
+        output[i] = saturate_ssat(total);
     }
 }
 
 void iir_filter_fixed_point_ssat(const input_data_t *input, int16_t *output,
-                            uint32_t input_length, filter_t *filter)
+                                 uint32_t input_length, filter_t *filter)
 {
     const int num_sf = filter->num_scale_factor_exp;
     const int den_sf = filter->den_scale_factor_exp;
