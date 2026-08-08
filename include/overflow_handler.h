@@ -22,6 +22,24 @@ static inline int16_t saturate(int64_t value)
     return (int16_t)value;
 }
 
+static inline int16_t saturate_ssat(int32_t value)
+{
+    int32_t result;
+
+    __asm__ volatile (
+        "ssat %0, #16, %1"
+        : "=r"(result)
+        : "r"(value)
+    );
+
+    if (result != value)
+    {
+        overflow_count++;
+    }
+
+    return (int16_t)result;
+}
+
 int get_overflow_count();
 
 void reset_overflow_count();

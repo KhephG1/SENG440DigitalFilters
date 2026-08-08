@@ -28,25 +28,6 @@ void test_parser(char *output, input_data_t *input_data, filter_t *filter)
     }
 }
 
-void test_overflow_handler(void){
-    printf("\n=== Overflow Handler Test ===\n");
-
-    int16_t normal_value = saturate(12345);
-    int16_t max_value = saturate(40000);
-    int16_t min_value = saturate(-40000);
-    int16_t edge_max = saturate(32767);
-    int16_t edge_min = saturate(-32768);
-
-    printf("saturate(12345)  = %d, expected 12345\n", normal_value);
-    printf("saturate(40000)  = %d, expected 32767\n", max_value);
-    printf("saturate(-40000) = %d, expected -32768\n", min_value);
-    printf("saturate(32767)  = %d, expected 32767\n", edge_max);
-    printf("saturate(-32768) = %d, expected -32768\n", edge_min);
-
-    printf("overflow count = %d, expected 2\n", get_overflow_count());
-    reset_overflow_count();
-}
-
 void test_fixed_point_math(float *input, uint16_t size)
 {
     if (size == 0)
@@ -175,6 +156,39 @@ void test_iir_filter_fixed(char *outputfile, input_data_t *input_data,
     int16_t filter_output[MAX_SAMPLES] = {};
     profiler_start();
     iir_filter_fixed_point(input_data, filter_output, data_samples, filter);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    FILE *file = fopen(outputfile, "w");
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", (int)filter_output[i]);
+    }
+    fclose(file);
+}
+
+void test_iir_filter_fixed_ssat(char *outputfile, input_data_t *input_data,
+                           filter_t *filter)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_tripled.csv", input_data, MAX_SAMPLES);
+    load_coefficients_fixed("tools/filter_coefficients/IIR_filter_coeffs.txt",
+                            IIR, filter);
+    printf("input data sf: %d, filter sf: num %d den %d\n",
+           input_data->scale_factor_exp, filter->num_scale_factor_exp,
+           filter->den_scale_factor_exp);
+    for (int i = 0; i < filter->x_coeffs; i++)
+    {
+        printf("filter x: %d\n", filter->x[i]);
+    }
+    printf("ycoeffs: %d\n", filter->y_coeffs);
+    for (int i = 0; i < filter->y_coeffs; i++)
+    {
+        printf("filter y: %d %d\n", i, filter->y[i]);
+    }
+
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    iir_filter_fixed_point_ssat(input_data, filter_output, data_samples, filter);
     profiler_stop();
     printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
     FILE *file = fopen(outputfile, "w");
@@ -424,6 +438,32 @@ void test_fir_filter_saturation(char *outputfile, input_data_t *input_data,
     fclose(file);
 }
 
+void test_fir_filter_ssat(char *outputfile, input_data_t *input_data,
+                     filter_t *filter)
+{
+    int data_samples = load_accelerometer_data_fixed(
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
+
+    load_coefficients_fixed("tools/filter_coefficients/FIR_filter_coeffs.txt",
+                            FIR, filter);
+
+    printf("input data sf: %d, filter sf: %d\n", input_data->scale_factor_exp,
+           filter->num_scale_factor_exp);
+    int16_t filter_output[MAX_SAMPLES] = {};
+    profiler_start();
+    fir_filter_saturation(input_data, filter_output, data_samples, filter->x,
+               filter->num_scale_factor_exp, filter->x_coeffs);
+    profiler_stop();
+    printf("time elapsed in ticks: %d\n", profiler_get_elapsed_time());
+    FILE *file = fopen(outputfile, "w");
+
+    for (int i = 0; i < data_samples; i++)
+    {
+        fprintf(file, "%d\n", filter_output[i]);
+    }
+    fclose(file);
+}
+
 void test_fir_filter_float(char *outputfile, float *input_data, float *filter_x,
                            int *coeffs_x)
 {
@@ -533,3 +573,88 @@ void test_iir_biquad_neon(char *outputfile, input_data_t *input_data)
     }
     fclose(file);
 }
+
+void test_ssat_overflow()
+{
+    FILE *file = fopen("tools/test_data/overflow_test.csv", "r");
+    FILE *out = fopen("test_output/ssat_saturated_output.txt", "w");
+
+    reset_overflow_count();
+
+    while (1)
+    {
+        int32_t input;
+        if (fscanf(file, " %d", &input) != 1)
+        {
+            break;
+        }
+
+        int16_t saturated = saturate_ssat(input);
+        fprintf(out, "%d", saturated);
+
+        // Consume comma if present
+        int c = fgetc(file);
+        if (c == EOF)
+        {
+            break;
+        }
+
+        if (c != ',')
+        {
+            ungetc(c, file);
+        }
+
+        fprintf(out, ",");
+    }
+
+    fclose(file);
+    fclose(out);
+
+    int actual_overflows = get_overflow_count();
+
+    printf("Expected overflows: 16000\n");
+    printf("Actual overflows: %d\n", actual_overflows);
+}
+
+void test_overflow()
+{
+    FILE *file = fopen("tools/test_data/overflow_test.csv", "r");
+    FILE *out = fopen("test_output/saturated_output.txt", "w");
+
+    reset_overflow_count();
+
+    while (1)
+    {
+        int32_t input;
+        if (fscanf(file, " %d", &input) != 1)
+        {
+            break;
+        }
+
+        int16_t saturated = saturate(input);
+        fprintf(out, "%d", saturated);
+
+        // Consume comma if present
+        int c = fgetc(file);
+        if (c == EOF)
+        {
+            break;
+        }
+
+        if (c != ',')
+        {
+            ungetc(c, file);
+        }
+
+        fprintf(out, ",");
+    }
+
+    fclose(file);
+    fclose(out);
+
+    int actual_overflows = get_overflow_count();
+
+    printf("Expected overflows: 16000\n");
+    printf("Actual overflows: %d\n", actual_overflows);
+}
+
