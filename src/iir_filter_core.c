@@ -1,9 +1,9 @@
 #include "iir_filter_core.h"
 #include "coefficient_loader.h"
 #include "input_data_loader.h"
+#include "mac_unit.h"
 #include "overflow_handler.h"
 #include <arm_neon.h>
-#include "mac_unit.h"
 
 #include <limits.h>
 #include <stdint.h>
@@ -265,7 +265,8 @@ void iir_filter_fixed_point_mac(const input_data_t *input, int16_t *output,
         {
             if (i >= j)
             {
-                num_acc = mac(num_acc, filter->x[j], input->input_data_buffer[i - j]);
+                num_acc =
+                    mac(num_acc, filter->x[j], input->input_data_buffer[i - j]);
             }
         }
 
