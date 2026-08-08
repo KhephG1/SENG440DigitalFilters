@@ -33,11 +33,16 @@ int main()
     // test_iir_biquad_fixed("tools/test_output/filter_output_4.txt", &input);
     // test_iir_biquad_fixed_unrolled("tools/test_output/test_output_5.txt",
     //                                &input);
-    // test_fir_filter_neon("tools/test_output/test_output_6.txt", &input,
-    //                      &FIR_filter);
-    // test_iir_biquad_neon("tools/test_output/test_output_7.txt", &input);
-    // test_iir_biquad_pipelined("tools/test_output/test_output_8.txt", &input);
-    test_iir_filter_fixed_mac("tools/test_output/test_output_9.txt", &input,
-                              &IIR_filter);
+    // test_fir_filter_neon("tools/test_output/test_output_7.txt", &input,
+    // &FIR_filter);
+    // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
+    // test_iir_biquad_neon("tools/test_output/test_output_8.txt", &input);
+    // test_iir_biquad_pipelined("tools/test_output/test_output_9.txt", &input);
+
+    // test_iir_filter_fixed_ssat("tools/test_output/test_output_10.txt",
+    // &input, &IIR_filter);
+    test_ssat_overflow();
+    test_overflow();
+
     return 0;
 }
