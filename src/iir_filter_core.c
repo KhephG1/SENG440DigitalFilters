@@ -159,53 +159,37 @@ void iir_filter_fixed_point_with_unrolling(const input_data_t *__restrict input,
                                            uint32_t input_length,
                                            filter_t *__restrict filter)
 {
-    // compute the shifts to be applied (denominator coeffcients scaled with
-    // different factor than numerator coefficients)
     const int num_sf = filter->num_scale_factor_exp;
     const int den_sf = filter->den_scale_factor_exp;
-    const int acc_sf = (num_sf > den_sf) ? num_sf : den_sf;
-    const int num_shift = acc_sf - num_sf;
-    const int den_shift = acc_sf - den_sf;
-    const int32_t round_add = (int32_t)1 << (acc_sf - 1);
-
-    // store coefficients as local variables
+    const int32_t num_round = (int32_t)1 << (num_sf - 1);
+    const int32_t den_round = (int32_t)1 << (den_sf - 1);
     const int16_t x0 = filter->x[0];
     const int16_t x1 = filter->x[1];
     const int16_t x2 = filter->x[2];
     const int16_t y1 = filter->y[1];
     const int16_t y2 = filter->y[2];
-    // use a separate restrict pointer for the data buffer within the struct
-    // guarantees to the compiler that input->input_data_buffer does not alias
-    // with output
-    // goal of above is to get the compiler to keep coefficienst and accumulator
-    // in registers
     const int16_t *__restrict in = input->input_data_buffer;
-    // initialize the filter
     if (input_length > 0)
     {
-        int64_t num_acc = (int64_t)((int32_t)x0 * in[0]);
-        int64_t total = (num_acc + round_add) >> num_sf;
-        output[0] = saturate(total);
+        int32_t num_acc = (((int32_t)x0 * in[0]) + num_round) >> num_sf;
+        output[0] = saturate(num_acc);
     }
     if (input_length > 1)
     {
-        int64_t num_acc =
-            (int64_t)((int32_t)x0 * in[1]) + (int64_t)((int32_t)x1 * in[0]);
-        int64_t den_acc = (int64_t)((int32_t)y1 * output[0]);
-        int64_t total = (num_acc << num_shift) - (den_acc << den_shift);
-        total = (total + round_add) >> acc_sf;
+        int32_t num_acc = ((((int32_t)x0 * in[1]) + num_round) >> num_sf) +
+                          ((((int32_t)x1 * in[0]) + num_round) >> num_sf);
+        int32_t den_acc = (((int32_t)y1 * output[0]) + den_round) >> den_sf;
+        int32_t total = num_acc - den_acc;
         output[1] = saturate(total);
     }
-
     for (int i = 2; i < input_length; i++)
     {
-        int64_t num_acc = (int64_t)((int32_t)x0 * in[i]) +
-                          (int64_t)((int32_t)x1 * in[i - 1]) +
-                          (int64_t)((int32_t)x2 * in[i - 2]);
-        int64_t den_acc = (int64_t)((int32_t)y1 * output[i - 1]) +
-                          (int64_t)((int32_t)y2 * output[i - 2]);
-        int64_t total = (num_acc << num_shift) - (den_acc << den_shift);
-        total = (total + round_add) >> acc_sf;
+        int32_t num_acc = ((((int32_t)x0 * in[i]) + num_round) >> num_sf) +
+                          ((((int32_t)x1 * in[i - 1]) + num_round) >> num_sf) +
+                          ((((int32_t)x2 * in[i - 2]) + num_round) >> num_sf);
+        int32_t den_acc = ((((int32_t)y1 * output[i - 1]) + den_round) >> den_sf) +
+                          ((((int32_t)y2 * output[i - 2]) + den_round) >> den_sf);
+        int32_t total = num_acc - den_acc;
         output[i] = saturate(total);
     }
 }
