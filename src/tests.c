@@ -170,7 +170,7 @@ void test_iir_filter_fixed_ssat(char *outputfile, input_data_t *input_data,
                            filter_t *filter)
 {
     int data_samples = load_accelerometer_data_fixed(
-        "tools/test_data/data_tripled.csv", input_data, MAX_SAMPLES);
+        "tools/test_data/data_normalized.csv", input_data, MAX_SAMPLES);
     load_coefficients_fixed("tools/filter_coefficients/IIR_filter_coeffs.txt",
                             IIR, filter);
     printf("input data sf: %d, filter sf: num %d den %d\n",

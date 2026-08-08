@@ -32,5 +32,5 @@ void fir_filter_neon(const int16_t *input_with_history,  // length: input_length
                      int16_t *output,                    // length: input_length
                      uint32_t input_length,
                      const int16_t *coeffs,  // length: coeffs_length
-                     uint32_t coeffs_length);
+                     uint32_t coeffs_length);               
 #endif
